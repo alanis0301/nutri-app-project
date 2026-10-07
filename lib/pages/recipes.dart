@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 class RecipesPage extends StatelessWidget {
   const RecipesPage({super.key});
+  static const greenColor = Color(0xFF16C768);
 
   @override
   Widget build(BuildContext context) {
-    const greenColor = Color(0xFF16C768);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -18,30 +18,12 @@ class RecipesPage extends StatelessWidget {
               // Header: Título + Botão Filtro Lateral
               _buildHeader(),
               const SizedBox(height: 24),
-
               // Campo de Busca
               _searchRecipes(),
               const SizedBox(height: 16),
 
               // Chips de Filtro
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _buildActiveFilterChip(
-                      icon: Icons.tune,
-                      label: 'Filtros',
-                      greenColor: greenColor,
-                    ),
-                    const SizedBox(width: 8),
-                    _buildFilterChip(label: 'Tempo'),
-                    const SizedBox(width: 8),
-                    _buildFilterChip(label: 'Tipo de refeição'),
-                    const SizedBox(width: 8),
-                    _buildFilterChip(label: 'Ingredientes'),
-                  ],
-                ),
-              ),
+              _filterRecipes(),
               const SizedBox(height: 24),
 
               // Seção: Receitas rápidas
@@ -150,6 +132,27 @@ class RecipesPage extends StatelessWidget {
     );
   }
 
+  SingleChildScrollView _filterRecipes(){
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _buildActiveFilterChip(
+            icon: Icons.tune,
+            label: 'Filtros',
+            greenColor: greenColor,
+          ),
+          const SizedBox(width: 8),
+          _buildFilterChip(label: 'Tempo'),
+          const SizedBox(width: 8),
+          _buildFilterChip(label: 'Tipo de refeição'),
+          const SizedBox(width: 8),
+          _buildFilterChip(label: 'Ingredientes'),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHeader() {
 
     return Row(
@@ -215,7 +218,7 @@ class RecipesPage extends StatelessWidget {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Color(0xFF16C768),
+            borderSide: const BorderSide(color: greenColor,
           ),
         ),
         ));
@@ -362,7 +365,7 @@ class RecipesPage extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF16C768),
+                        color: greenColor,
                       ),
                     ),
                   ],
