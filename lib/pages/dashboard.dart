@@ -10,31 +10,16 @@ class DashboardPage extends StatelessWidget {
       backgroundColor: Colors.white,
 
       body: SingleChildScrollView(
-
-        padding: const EdgeInsets.fromLTRB(
-          20,
-          18,
-          20,
-          30,
-        ),
-
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 30,),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-
           children: [
-
             _buildHeader(),
-
             const SizedBox(height: 24),
-
             _buildMetrics(),
-
             const SizedBox(height: 12),
-
             _buildNextMeal(),
-
             const SizedBox(height: 10),
-
             _buildSuggestions(),
           ],
         ),
@@ -50,7 +35,6 @@ class DashboardPage extends StatelessWidget {
 
     return Row(
       children: [
-
         Expanded(
     child: Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -89,10 +73,6 @@ class DashboardPage extends StatelessWidget {
       ],
     ))]);
   }
-
-  // ==========================================================
-  // MÉTRICAS
-  // ==========================================================
 
   Widget _buildMetrics() {
 
@@ -153,19 +133,15 @@ class DashboardPage extends StatelessWidget {
   // ==========================================================
 
   Widget _buildNextMeal() {
-
     return Column(
       crossAxisAlignment:
       CrossAxisAlignment.start,
 
       children: [
-
         Row(
           mainAxisAlignment:
           MainAxisAlignment.spaceBetween,
-
           children: [
-
             const Text(
               'Próxima refeição',
               style: TextStyle(
@@ -174,7 +150,6 @@ class DashboardPage extends StatelessWidget {
                 color: Color(0xFF172033),
               ),
             ),
-
             const Text(
               'Hoje às 12:30',
               style: TextStyle(
@@ -185,9 +160,7 @@ class DashboardPage extends StatelessWidget {
             ),
           ],
         ),
-
         const SizedBox(height: 10),
-
         ClipRRect(
           borderRadius:
           BorderRadius.circular(15),
@@ -198,9 +171,7 @@ class DashboardPage extends StatelessWidget {
 
             child: Stack(
               fit: StackFit.expand,
-
               children: [
-
                 Image.network(
                   'https://images.unsplash.com/'
                       'photo-1540420773420-3366772f4999'

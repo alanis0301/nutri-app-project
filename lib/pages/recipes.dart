@@ -11,67 +11,16 @@ class RecipesPage extends StatelessWidget {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 30,),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header: Título + Botão Filtro Lateral
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Receitas',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1C1E),
-                    ),
-                  ),
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF4F5F7),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: IconButton(
-                      icon: const Icon(
-                        Icons.tune,
-                        color: Color(0xFF1A1C1E),
-                        size: 20,
-                      ),
-                      onPressed: () {},
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
+              _buildHeader(),
+              const SizedBox(height: 24),
 
               // Campo de Busca
-              TextField(
-                decoration: InputDecoration(
-                  hintText: 'Buscar receitas, ingredientes...',
-                  hintStyle: const TextStyle(
-                    color: Color(0xFF9EA5B1),
-                    fontSize: 14,
-                  ),
-                  prefixIcon: const Icon(
-                    Icons.search,
-                    color: Color(0xFF9EA5B1),
-                  ),
-                  filled: true,
-                  fillColor: const Color(0xFFF8F9FA),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Color(0xFFE1E5EB)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: greenColor),
-                  ),
-                ),
-              ),
+              _searchRecipes(),
               const SizedBox(height: 16),
 
               // Chips de Filtro
@@ -201,6 +150,76 @@ class RecipesPage extends StatelessWidget {
     );
   }
 
+  Widget _buildHeader() {
+
+    return Row(
+        children: [
+
+          Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header: Título + Botão Filtro Lateral
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Receitas',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A1C1E),
+                        ),
+                      ),
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF4F5F7),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.tune,
+                            color: Color(0xFF1A1C1E),
+                            size: 20,
+                          ),
+                          onPressed: () {},
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ))]);
+  }
+
+  TextField _searchRecipes(){
+    return TextField(
+        decoration: InputDecoration(
+          hintText: 'Buscar receitas, ingredientes...',
+          hintStyle: const TextStyle(
+            color: Color(0xFF9EA5B1),
+            fontSize: 14,
+          ),
+          prefixIcon: const Icon(
+            Icons.search,
+            color: Color(0xFF9EA5B1),
+          ),
+          filled: true,
+          fillColor: const Color(0xFFF8F9FA),
+          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFFE1E5EB)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFF16C768),
+          ),
+        ),
+        ));
+}
   // Chip Ativo (Filtros verde)
   Widget _buildActiveFilterChip({
     required IconData icon,
