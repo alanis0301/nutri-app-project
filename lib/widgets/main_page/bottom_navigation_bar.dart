@@ -61,7 +61,8 @@ class BottomNavigationBard extends StatelessWidget {
                 child: Center(
                   child: GestureDetector(
                     onTap: () {
-                      onItemTapped(2); // Aciona o índice 2 (Abrir modal AddMeal)
+                      onItemTapped(
+                          2); // Aciona o índice 2 (Abrir modal AddMeal)
                     },
                     child: Container(
                       width: 52,

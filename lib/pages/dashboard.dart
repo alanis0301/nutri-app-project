@@ -10,12 +10,15 @@ class DashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: Colors.white,
-
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 30,),
+        padding: const EdgeInsets.fromLTRB(
+          20,
+          18,
+          20,
+          30,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -31,5 +34,4 @@ class DashboardPage extends StatelessWidget {
       ),
     );
   }
-
 }

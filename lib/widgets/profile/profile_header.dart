@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class DashboardHeader extends StatelessWidget {
-  const DashboardHeader({super.key});
+class ProfileHeader extends StatelessWidget {
+  const ProfileHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +15,7 @@ class DashboardHeader extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Olá, Ana!',
+                'Perfil',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,

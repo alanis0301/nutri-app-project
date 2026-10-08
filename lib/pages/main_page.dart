@@ -15,7 +15,6 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-
   int selectedIndex = 0;
 
   final List<Widget> pages = [
@@ -39,19 +38,16 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: pages[selectedIndex],
       ),
-
       bottomNavigationBar: BottomNavigationBard(
         selectedIndex: selectedIndex,
         onItemTapped: _onItemTapped,
       ),
     );
   }
-
 }

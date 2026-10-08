@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 class MetricCard extends StatelessWidget {
-
   final IconData icon;
   final Color iconColor;
   final Color iconBackground;
@@ -21,56 +20,40 @@ class MetricCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(13),
-
       decoration: BoxDecoration(
         color: Colors.white,
-
-        borderRadius:
-        BorderRadius.circular(15),
-
+        borderRadius: BorderRadius.circular(15),
         border: Border.all(
           color: const Color(0xFFE1E5EB),
         ),
       ),
-
       child: Column(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
-
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           Container(
             width: 28,
             height: 28,
-
             decoration: BoxDecoration(
               color: iconBackground,
               shape: BoxShape.circle,
             ),
-
             child: Icon(
               icon,
               color: iconColor,
               size: 16,
             ),
           ),
-
           const Spacer(),
-
           Text(
             title,
-
             style: const TextStyle(
               color: Color(0xFF697386),
               fontSize: 11,
             ),
           ),
-
           const SizedBox(height: 2),
-
           Text(
             value,
-
             style: const TextStyle(
               color: Color(0xFF172033),
               fontSize: 14,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class DashboardHeader extends StatelessWidget {
-  const DashboardHeader({super.key});
+class RecipesHeader extends StatelessWidget {
+  const RecipesHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +15,7 @@ class DashboardHeader extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Olá, Ana!',
+                'Receitas',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
