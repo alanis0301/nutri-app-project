@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nutri_app_project/pages/filter_recipes_page.dart';
 
 class FilterRecipes extends StatelessWidget {
   const FilterRecipes({super.key});
@@ -10,6 +11,7 @@ class FilterRecipes extends StatelessWidget {
       child: Row(
         children: [
           _buildActiveFilterChip(
+            context: context,
             icon: Icons.tune,
             label: 'Filtros',
             greenColor: Color(0xFF16C768),
@@ -26,35 +28,49 @@ class FilterRecipes extends StatelessWidget {
   }
 
   Widget _buildActiveFilterChip({
+    required BuildContext context,
     required IconData icon,
     required String label,
     required Color greenColor,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: greenColor.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: greenColor),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: greenColor),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: greenColor,
-            ),
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const RecipeFiltersPage(),
           ),
-        ],
+        );
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 8,
+        ),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE8F8EE),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: greenColor),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 16, color: greenColor),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: greenColor,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-// Chip Inativo
   Widget _buildFilterChip({required String label}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
