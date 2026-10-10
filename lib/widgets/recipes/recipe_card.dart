@@ -5,6 +5,7 @@ class RecipeCard extends StatelessWidget {
   final String time;
   final String difficulty;
   final String imageUrl;
+  final VoidCallback onTap;
 
   const RecipeCard({
     super.key,
@@ -12,18 +13,24 @@ class RecipeCard extends StatelessWidget {
     required this.time,
     required this.difficulty,
     required this.imageUrl,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 180,
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE1E5EB)),
-      ),
-      child: Column(
+        child: Container(
+          width: 180,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFFE1E5EB),
+            ),
+          ),
+          child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Imagem com Favorito
@@ -112,6 +119,6 @@ class RecipeCard extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 }

@@ -5,6 +5,7 @@ import '../widgets/recipes/search_recipes.dart';
 import '../widgets/recipes/filter_recipes.dart';
 import '../widgets/recipes/recipe_card.dart';
 import '../widgets/recipes/category_widget.dart';
+import 'recipe_details.dart';
 
 class RecipesPage extends StatelessWidget {
   const RecipesPage({super.key});
@@ -68,20 +69,36 @@ class RecipesPage extends StatelessWidget {
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
-                    const RecipeCard(
+                    RecipeCard(
                       title: 'Omelete de forno',
                       time: '15 min',
                       difficulty: 'Fácil',
                       imageUrl:
                           'https://images.unsplash.com/photo-1510693206972-df098062cb71?auto=format&fit=crop&w=500&q=80',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const RecipeDetailPage(),
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(width: 16),
-                    const RecipeCard(
+                    RecipeCard(
                       title: 'Wrap de frango',
                       time: '20 min',
                       difficulty: 'Fácil',
                       imageUrl:
                           'https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=500&q=80',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const RecipeDetailPage(),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
