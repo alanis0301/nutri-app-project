@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'pages/main_page.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() {
   runApp(const NutriViverApp());
@@ -14,13 +15,16 @@ class NutriViverApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'NutriViver',
 
-      theme: ThemeData(
-        useMaterial3: true,
-        fontFamily: 'Roboto',
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF16C768),
-        ),
-      ),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+
+      supportedLocales: const [
+        Locale('pt', 'BR'),
+        Locale('en', 'US'),
+      ],
 
       home: const MainPage(),
     );

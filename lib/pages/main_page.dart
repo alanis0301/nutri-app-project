@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'dashboard.dart';
 import 'recipes.dart';
-import 'schedule.dart';
+import 'agenda_page.dart';
 import 'profile.dart';
 import '../widgets/main_page/add_meal.dart';
 import '../widgets/main_page/bottom_navigation_bar.dart';
@@ -21,7 +21,7 @@ class _MainPageState extends State<MainPage> {
     const DashboardPage(),
     const RecipesPage(),
     const SizedBox(),
-    const SchedulePage(),
+    const AgendaPage(),
     const ProfilePage(),
   ];
 
