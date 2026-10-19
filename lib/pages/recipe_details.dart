@@ -6,35 +6,17 @@ import '../widgets/recipes/recipe_details/tabs.dart';
 import '../widgets/recipes/recipe_details/tab_content.dart';
 
 class RecipeDetailPage extends StatefulWidget {
-  /// Receita vinda do backend; sem ela a tela mostra o exemplo fixo.
-  final Map<String, dynamic>? recipe;
+  /// Receita vinda do backend (mesmos campos de Api.recipeFields).
+  final Map<String, dynamic> recipe;
 
-  const RecipeDetailPage({super.key, this.recipe});
+  const RecipeDetailPage({super.key, required this.recipe});
 
   @override
   State<RecipeDetailPage> createState() => _RecipeDetailPageState();
 }
 
 class _RecipeDetailPageState extends State<RecipeDetailPage> {
-  // Estado da tela
-  bool isFavorite = false;
   int selectedTab = 0;
-
-  final List<String> ingredients = [
-    '2 filés de salmão (200g cada)',
-    '1 batata-doce média',
-    '1 xícara de brócolis',
-    '2 colheres de azeite de oliva',
-    'Sal e pimenta a gosto',
-  ];
-
-  late List<bool> checkedIngredients;
-
-  @override
-  void initState() {
-    super.initState();
-    checkedIngredients = List<bool>.filled(ingredients.length, true);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +31,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    RecipeImage(imageUrl: widget.recipe?['imageUrl']),
+                    RecipeImage(recipe: widget.recipe),
                     RecipeInformation(recipe: widget.recipe),
                     Tabs(
                       selectedTab: selectedTab,
@@ -69,7 +51,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
             ),
 
             // Botão fixo na parte inferior
-            const BottomButton(),
+            BottomButton(recipe: widget.recipe),
           ],
         ),
       ),

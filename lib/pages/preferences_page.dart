@@ -18,42 +18,24 @@ class _PreferencesPageState extends State<PreferencesPage> {
   static const Color lightGreen = Color(0xFFF0FBF4);
   static const Color softGray = Color(0xFFF3F4F6);
 
-  final List<Map<String, dynamic>> goals = [
-    {'name': 'Perder peso', 'icon': Icons.trending_down},
-    {'name': 'Manter peso', 'icon': Icons.show_chart},
-    {'name': 'Ganhar massa', 'icon': Icons.workspace_premium_outlined},
-    {'name': 'Ter mais disposição', 'icon': Icons.bolt_outlined},
-  ];
-
-  final List<String> restrictions = [
-    'Glúten',
-    'Lactose',
-    'Oleaginosas',
-    'Frutos do mar',
-    'Soja',
-    'Outro',
-  ];
-
-  final List<String> likedFoods = [
-    'Frango',
-    'Ovo',
-    'Abacate',
-    'Brócolis',
-    'Tomate',
-    'Batata-doce',
-  ];
-
-  final Set<String> selectedGoals = {'Perder peso'};
-  final Set<String> selectedRestrictions = {'Glúten', 'Lactose'};
-  final Set<String> selectedLikes = {
-    'Frango',
-    'Ovo',
-    'Abacate',
-    'Brócolis',
-    'Tomate',
-    'Batata-doce',
+  // Ícone por objetivo; objetivos novos no banco usam o ícone padrão.
+  static const Map<String, IconData> goalIcons = {
+    'Perder peso': Icons.trending_down,
+    'Manter peso': Icons.show_chart,
+    'Ganhar massa': Icons.workspace_premium_outlined,
+    'Ter mais disposição': Icons.bolt_outlined,
   };
 
+  // Opções vêm do backend (catálogos de goal, restriction e preference).
+  List<Map<String, dynamic>> goals = [];
+  List<String> restrictions = [];
+  List<String> likedFoods = [];
+
+  final Set<String> selectedGoals = {};
+  final Set<String> selectedRestrictions = {};
+  final Set<String> selectedLikes = {};
+
+  bool _loading = true;
   bool _saving = false;
 
   @override
@@ -62,13 +44,21 @@ class _PreferencesPageState extends State<PreferencesPage> {
     _loadProfile();
   }
 
-  /// Preenche a tela com o que está salvo no backend.
+  /// Carrega as opções e preenche a tela com o que está salvo no backend.
   Future<void> _loadProfile() async {
     try {
-      final user = await Api.currentUser();
+      final results = await Future.wait([Api.profileOptions(), Api.me()]);
+      final options = results[0] as Map<String, List<String>>;
+      final user = results[1] as Map<String, dynamic>;
       final names = (List list) => list.map((e) => e['name'] as String).toSet();
       if (!mounted) return;
       setState(() {
+        _loading = false;
+        goals = options['goals']!
+            .map((g) => {'name': g, 'icon': goalIcons[g] ?? Icons.flag_outlined})
+            .toList();
+        restrictions = options['restrictions']!;
+        likedFoods = options['preferences']!;
         selectedGoals
           ..clear()
           ..addAll(user['goal'] == null ? {} : {user['goal']['name'] as String});
@@ -246,7 +236,9 @@ class _PreferencesPageState extends State<PreferencesPage> {
         child: Column(
           children: [
             Expanded(
-              child: SingleChildScrollView(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator(color: green))
+                  : SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,7 +299,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
                 height: 56,
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _saving ? null : _save,
+                  onPressed: _saving || _loading ? null : _save,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: green,
                     foregroundColor: Colors.white,

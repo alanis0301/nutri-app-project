@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'info_chip.dart';
 
 class PreparationList extends StatefulWidget {
-  final List<String>? steps;
+  final List<String> steps;
 
-  const PreparationList({super.key, this.steps});
+  const PreparationList({super.key, required this.steps});
 
   @override
   State<PreparationList> createState() => _PreparationListState();
@@ -12,14 +12,7 @@ class PreparationList extends StatefulWidget {
 
 class _PreparationListState extends State<PreparationList> {
   // 1. Declaração da variável de estado aqui
-  late final List<String> preparationSteps = widget.steps ?? [
-    'Preaqueça o forno a 200 °C.',
-    'Corte a batata-doce em cubos e tempere com azeite, sal e pimenta.',
-    'Coloque a batata-doce em uma assadeira e asse por 15 minutos.',
-    'Adicione o salmão e asse por mais 12 a 15 minutos.',
-    'Cozinhe os brócolis até ficarem macios, mas ainda firmes.',
-    'Sirva o salmão com a batata-doce e os brócolis.',
-  ];
+  late final List<String> preparationSteps = widget.steps;
 
   @override
   Widget build(BuildContext context) {

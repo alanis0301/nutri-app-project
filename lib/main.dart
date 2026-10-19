@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'pages/main_page.dart';
+import 'pages/login_page.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() {
@@ -26,7 +26,7 @@ class NutriViverApp extends StatelessWidget {
         Locale('en', 'US'),
       ],
 
-      home: const MainPage(),
+      home: const LoginPage(),
     );
   }
 }

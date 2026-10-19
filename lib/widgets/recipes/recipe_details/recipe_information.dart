@@ -2,18 +2,15 @@ import 'package:flutter/material.dart';
 import 'info_chip.dart';
 
 class RecipeInformation extends StatefulWidget {
-  final Map<String, dynamic>? recipe;
+  final Map<String, dynamic> recipe;
 
-  const RecipeInformation({super.key, this.recipe});
+  const RecipeInformation({super.key, required this.recipe});
 
   @override
   State<RecipeInformation> createState() => _RecipeInformationState();
 }
 
 class _RecipeInformationState extends State<RecipeInformation> {
-  // 1. Declaração da variável de estado aqui
-  bool isFavorite = false;
-
   @override
   Widget build(BuildContext context) {
     const Color textColor = Color(0xFF171E2E);
@@ -26,7 +23,7 @@ class _RecipeInformationState extends State<RecipeInformation> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            recipe?['name'] ?? 'Salmão ao forno com batata-doce e brócolis',
+            recipe['name'],
             style: TextStyle(
               color: textColor,
               fontSize: 22,
@@ -36,7 +33,7 @@ class _RecipeInformationState extends State<RecipeInformation> {
           ),
           const SizedBox(height: 4),
           Text(
-            recipe?['description'] ?? 'por Cozinha NutriViver',
+            recipe['description'],
             style: TextStyle(
               color: secondaryText,
               fontSize: 14,
@@ -51,21 +48,19 @@ class _RecipeInformationState extends State<RecipeInformation> {
             children: [
               InfoChip(
                 icon: Icons.access_time_filled,
-                label: recipe != null
-                    ? '${(recipe['prepTime'] as num).round()} min'
-                    : '30 min',
+                label: '${(recipe['prepTime'] as num).round()} min',
               ),
               InfoChip(
                 icon: Icons.star_border,
-                label: recipe?['difficulty'] ?? 'Fácil',
+                label: recipe['difficulty'] ?? '-',
               ),
               InfoChip(
                 icon: Icons.local_fire_department,
-                label: '420 kcal',
+                label: '${recipe['calories'] ?? '-'} kcal',
               ),
               InfoChip(
                 icon: Icons.fitness_center,
-                label: '35g proteína',
+                label: '${((recipe['protein'] as num?) ?? 0).round()}g proteína',
               ),
             ],
           ),

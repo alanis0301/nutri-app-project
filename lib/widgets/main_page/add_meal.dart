@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
+/// Menu do botão "+". Devolve a opção escolhida para a MainPage.
 class AddMeal extends StatelessWidget {
+  static const String addMeal = 'addMeal';
+  static const String chooseRecipe = 'chooseRecipe';
+
   const AddMeal({super.key});
 
   @override
@@ -27,7 +31,7 @@ class AddMeal extends StatelessWidget {
                 'Adicionar refeição',
               ),
               onTap: () {
-                Navigator.pop(context);
+                Navigator.pop(context, addMeal);
               },
             ),
             ListTile(
@@ -38,7 +42,7 @@ class AddMeal extends StatelessWidget {
                 'Escolher receita',
               ),
               onTap: () {
-                Navigator.pop(context);
+                Navigator.pop(context, chooseRecipe);
               },
             ),
           ],
