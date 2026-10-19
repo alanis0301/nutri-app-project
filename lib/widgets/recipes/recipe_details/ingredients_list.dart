@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 
 class IngredientsList extends StatefulWidget {
-  const IngredientsList({super.key});
+  final List<String>? items;
+
+  const IngredientsList({super.key, this.items});
 
   @override
   State<IngredientsList> createState() => _IngredientsListState();
 }
 
 class _IngredientsListState extends State<IngredientsList> {
-  final List<String> ingredients = [
+  late final List<String> ingredients = widget.items ?? [
     '2 filés de salmão (200g cada)',
     '1 batata-doce média',
     '1 xícara de brócolis',

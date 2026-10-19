@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'info_chip.dart';
 
 class PreparationList extends StatefulWidget {
-  const PreparationList({super.key});
+  final List<String>? steps;
+
+  const PreparationList({super.key, this.steps});
 
   @override
   State<PreparationList> createState() => _PreparationListState();
@@ -10,7 +12,7 @@ class PreparationList extends StatefulWidget {
 
 class _PreparationListState extends State<PreparationList> {
   // 1. Declaração da variável de estado aqui
-  final List<String> preparationSteps = [
+  late final List<String> preparationSteps = widget.steps ?? [
     'Preaqueça o forno a 200 °C.',
     'Corte a batata-doce em cubos e tempere com azeite, sal e pimenta.',
     'Coloque a batata-doce em uma assadeira e asse por 15 minutos.',

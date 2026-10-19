@@ -4,10 +4,12 @@ import 'preparation_list.dart';
 
 class TabContent extends StatelessWidget {
   final int selectedTab;
+  final Map<String, dynamic>? recipe;
 
   const TabContent({
     super.key,
     required this.selectedTab,
+    this.recipe,
   });
 
   @override
@@ -24,9 +26,17 @@ class TabContent extends StatelessWidget {
             color: dividerColor,
           ),
           if (selectedTab == 0)
-            const IngredientsList()
+            IngredientsList(
+              items: (recipe?['ingredients'] as List?)?.map((i) {
+                final qty = i['quantity'] as num;
+                final amount = qty == qty.roundToDouble() ? qty.round() : qty;
+                return '$amount ${i['measureUnity']} de ${i['ingredient']['name']}';
+              }).toList(),
+            )
           else
-            const PreparationList(),
+            PreparationList(
+              steps: (recipe?['steps'] as List?)?.cast<String>(),
+            ),
         ],
       ),
     );

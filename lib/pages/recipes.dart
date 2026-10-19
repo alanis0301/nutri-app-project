@@ -6,10 +6,26 @@ import '../widgets/recipes/filter_recipes.dart';
 import '../widgets/recipes/recipe_card.dart';
 import '../widgets/recipes/category_widget.dart';
 import 'recipe_details.dart';
+import '../services/api.dart';
 
-class RecipesPage extends StatelessWidget {
+class RecipesPage extends StatefulWidget {
   const RecipesPage({super.key});
+
+  @override
+  State<RecipesPage> createState() => _RecipesPageState();
+}
+
+class _RecipesPageState extends State<RecipesPage> {
   static const greenColor = Color(0xFF16C768);
+
+  // Receitas vindas do backend; a busca usa o Elasticsearch.
+  late Future<List<Map<String, dynamic>>> _recipes = Api.recipes();
+
+  void _search(String text) {
+    setState(() {
+      _recipes = text.trim().isEmpty ? Api.recipes() : Api.searchRecipes(text);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +46,7 @@ class RecipesPage extends StatelessWidget {
               const RecipesHeader(),
               const SizedBox(height: 24),
               // Campo de Busca
-              const SearchRecipes(),
+              SearchRecipes(onSubmitted: _search),
               const SizedBox(height: 16),
               // Chips de Filtro
               const FilterRecipes(),
@@ -66,41 +82,47 @@ class RecipesPage extends StatelessWidget {
               // Lista Horizontal de Receitas
               SizedBox(
                 height: 210,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    RecipeCard(
-                      title: 'Omelete de forno',
-                      time: '15 min',
-                      difficulty: 'Fácil',
-                      imageUrl:
-                          'https://images.unsplash.com/photo-1510693206972-df098062cb71?auto=format&fit=crop&w=500&q=80',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const RecipeDetailPage(),
-                          ),
+                child: FutureBuilder<List<Map<String, dynamic>>>(
+                  future: _recipes,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Text('Erro ao carregar receitas: ${snapshot.error}'),
+                      );
+                    }
+                    if (!snapshot.hasData) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: greenColor),
+                      );
+                    }
+                    final recipes = snapshot.data!;
+                    if (recipes.isEmpty) {
+                      return const Center(child: Text('Nenhuma receita encontrada'));
+                    }
+                    return ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: recipes.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 16),
+                      itemBuilder: (context, i) {
+                        final recipe = recipes[i];
+                        return RecipeCard(
+                          title: recipe['name'],
+                          time: '${(recipe['prepTime'] as num).round()} min',
+                          difficulty: recipe['difficulty'] ?? '',
+                          imageUrl: recipe['imageUrl'] ?? '',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    RecipeDetailPage(recipe: recipe),
+                              ),
+                            );
+                          },
                         );
                       },
-                    ),
-                    const SizedBox(width: 16),
-                    RecipeCard(
-                      title: 'Wrap de frango',
-                      time: '20 min',
-                      difficulty: 'Fácil',
-                      imageUrl:
-                          'https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=500&q=80',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const RecipeDetailPage(),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 24),

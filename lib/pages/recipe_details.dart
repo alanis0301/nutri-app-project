@@ -6,7 +6,10 @@ import '../widgets/recipes/recipe_details/tabs.dart';
 import '../widgets/recipes/recipe_details/tab_content.dart';
 
 class RecipeDetailPage extends StatefulWidget {
-  const RecipeDetailPage({super.key});
+  /// Receita vinda do backend; sem ela a tela mostra o exemplo fixo.
+  final Map<String, dynamic>? recipe;
+
+  const RecipeDetailPage({super.key, this.recipe});
 
   @override
   State<RecipeDetailPage> createState() => _RecipeDetailPageState();
@@ -46,8 +49,8 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const RecipeImage(),
-                    const RecipeInformation(),
+                    RecipeImage(imageUrl: widget.recipe?['imageUrl']),
+                    RecipeInformation(recipe: widget.recipe),
                     Tabs(
                       selectedTab: selectedTab,
                       onTabChanged: (index) {
@@ -58,6 +61,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                     ),
                     TabContent(
                       selectedTab: selectedTab,
+                      recipe: widget.recipe,
                     ),
                   ],
                 ),

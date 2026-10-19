@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 
 class SearchRecipes extends StatelessWidget {
-  const SearchRecipes({super.key});
+  final ValueChanged<String>? onSubmitted;
+
+  const SearchRecipes({super.key, this.onSubmitted});
 
   @override
   Widget build(BuildContext context) {
     return TextField(
+        onSubmitted: onSubmitted,
+        textInputAction: TextInputAction.search,
         decoration: InputDecoration(
       hintText: 'Buscar receitas, ingredientes...',
       hintStyle: const TextStyle(

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'circle_button.dart';
 
 class RecipeImage extends StatefulWidget {
-  const RecipeImage({super.key});
+  final String? imageUrl;
+
+  const RecipeImage({super.key, this.imageUrl});
 
   @override
   State<RecipeImage> createState() => _RecipeImageState();
@@ -23,8 +25,11 @@ class _RecipeImageState extends State<RecipeImage> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset(
-            'assets/images/salmao_batata_brocolis.jpg',
+          Image(
+            image: widget.imageUrl != null
+                ? NetworkImage(widget.imageUrl!)
+                : const AssetImage('assets/images/salmao_batata_brocolis.jpg')
+                    as ImageProvider,
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
               return Container(

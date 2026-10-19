@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'info_chip.dart';
 
 class RecipeInformation extends StatefulWidget {
-  const RecipeInformation({super.key});
+  final Map<String, dynamic>? recipe;
+
+  const RecipeInformation({super.key, this.recipe});
 
   @override
   State<RecipeInformation> createState() => _RecipeInformationState();
@@ -16,14 +18,15 @@ class _RecipeInformationState extends State<RecipeInformation> {
   Widget build(BuildContext context) {
     const Color textColor = Color(0xFF171E2E);
     const Color secondaryText = Color(0xFF687184);
+    final recipe = widget.recipe;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Salmão ao forno com batata-doce e brócolis',
+          Text(
+            recipe?['name'] ?? 'Salmão ao forno com batata-doce e brócolis',
             style: TextStyle(
               color: textColor,
               fontSize: 22,
@@ -32,8 +35,8 @@ class _RecipeInformationState extends State<RecipeInformation> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'por Cozinha NutriViver',
+          Text(
+            recipe?['description'] ?? 'por Cozinha NutriViver',
             style: TextStyle(
               color: secondaryText,
               fontSize: 14,
@@ -48,11 +51,13 @@ class _RecipeInformationState extends State<RecipeInformation> {
             children: [
               InfoChip(
                 icon: Icons.access_time_filled,
-                label: '30 min',
+                label: recipe != null
+                    ? '${(recipe['prepTime'] as num).round()} min'
+                    : '30 min',
               ),
               InfoChip(
                 icon: Icons.star_border,
-                label: 'Fácil',
+                label: recipe?['difficulty'] ?? 'Fácil',
               ),
               InfoChip(
                 icon: Icons.local_fire_department,

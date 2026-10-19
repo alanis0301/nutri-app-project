@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../services/api.dart';
+
 class PreferencesPage extends StatefulWidget {
   const PreferencesPage({super.key});
 
@@ -41,7 +43,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
     'Batata-doce',
   ];
 
-  final Set<String> selectedGoals = {'Perder peso', 'Ter mais disposição'};
+  final Set<String> selectedGoals = {'Perder peso'};
   final Set<String> selectedRestrictions = {'Glúten', 'Lactose'};
   final Set<String> selectedLikes = {
     'Frango',
@@ -51,6 +53,56 @@ class _PreferencesPageState extends State<PreferencesPage> {
     'Tomate',
     'Batata-doce',
   };
+
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  /// Preenche a tela com o que está salvo no backend.
+  Future<void> _loadProfile() async {
+    try {
+      final user = await Api.currentUser();
+      final names = (List list) => list.map((e) => e['name'] as String).toSet();
+      if (!mounted) return;
+      setState(() {
+        selectedGoals
+          ..clear()
+          ..addAll(user['goal'] == null ? {} : {user['goal']['name'] as String});
+        selectedRestrictions
+          ..clear()
+          ..addAll(names(user['restrictions']));
+        final likes = names(user['preferences']);
+        for (final like in likes) {
+          if (!likedFoods.contains(like)) likedFoods.add(like);
+        }
+        selectedLikes
+          ..clear()
+          ..addAll(likes);
+      });
+    } catch (e) {
+      _showError(e);
+    }
+  }
+
+  void _showError(Object e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Não foi possível falar com o servidor: $e')),
+    );
+  }
+
+  /// O usuário tem um único objetivo (modelo do banco), então a seleção é exclusiva.
+  void _selectGoal(String value) {
+    setState(() {
+      selectedGoals
+        ..clear()
+        ..add(value);
+    });
+  }
 
   void _toggle(Set<String> set, String value) {
     setState(() {
@@ -121,7 +173,20 @@ class _PreferencesPageState extends State<PreferencesPage> {
     }
   }
 
-  void _save() {
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    try {
+      await Api.updateProfile(
+        goal: selectedGoals.isEmpty ? null : selectedGoals.first,
+        preferences: selectedLikes.toList(),
+        restrictions: selectedRestrictions.toList(),
+      );
+    } catch (e) {
+      setState(() => _saving = false);
+      _showError(e);
+      return;
+    }
+    if (!mounted) return;
     // Retorna as preferências para a tela anterior.
     Navigator.pop(context, <String, dynamic>{
       'goals': selectedGoals.toList(),
@@ -242,7 +307,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
                 height: 56,
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _save,
+                  onPressed: _saving ? null : _save,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: green,
                     foregroundColor: Colors.white,
@@ -272,7 +337,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
     final selected = selectedGoals.contains(name);
 
     return GestureDetector(
-      onTap: () => _toggle(selectedGoals, name),
+      onTap: () => _selectGoal(name),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
         height: 60,
