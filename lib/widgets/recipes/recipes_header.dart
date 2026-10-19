@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../pages/preferences_page.dart';
 
 class RecipesHeader extends StatelessWidget {
   const RecipesHeader({super.key});
@@ -35,7 +36,12 @@ class RecipesHeader extends StatelessWidget {
                     color: Color(0xFF1A1C1E),
                     size: 20,
                   ),
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PreferencesPage()),
+                    );
+                  },
                 ),
               ),
             ],

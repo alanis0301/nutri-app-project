@@ -22,22 +22,6 @@ class ProfileHeader extends StatelessWidget {
                   color: Color(0xFF1A1C1E),
                 ),
               ),
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF4F5F7),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.tune,
-                    color: Color(0xFF1A1C1E),
-                    size: 20,
-                  ),
-                  onPressed: () {},
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 20),

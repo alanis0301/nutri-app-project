@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'info_chip.dart';
+import '../../../pages/add_to_plan_page.dart';
 
 class BottomButton extends StatefulWidget {
   const BottomButton({super.key});
@@ -35,7 +35,14 @@ class _BottomButtonState extends State<BottomButton> {
       child: SizedBox(
         height: 56,
         child: ElevatedButton(
-          onPressed: _addToPlan,
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AddToPlanPage(),
+              ),
+            );
+          },
           style: ElevatedButton.styleFrom(
             backgroundColor: primaryGreen,
             foregroundColor: Colors.white,
@@ -57,12 +64,4 @@ class _BottomButtonState extends State<BottomButton> {
     );
   }
 
-  void _addToPlan() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Receita pronta para ser adicionada ao plano!'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
 }

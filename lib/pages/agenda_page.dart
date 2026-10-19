@@ -37,22 +37,21 @@ class _AgendaPageState extends State<AgendaPage> {
         category: 'Café da manhã',
         title: 'Overnight Oats com Frutas',
         time: '07:30',
-        imageUrl:
-        'https://images.unsplash.com/photo-1517673132405-a56a62b18caf?auto=format&fit=crop&w=300&q=80',
+        imageUrl: '',
       ),
       MealItem(
         category: 'Almoço',
         title: 'Salmão ao forno com batata-doce',
         time: '12:00',
         imageUrl:
-        'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=300&q=80',
+        '',
       ),
       MealItem(
         category: 'Jantar',
         title: 'Salada Caesar com Frango',
         time: '19:30',
         imageUrl:
-        'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=300&q=80',
+        '',
       ),
     ];
   }
@@ -262,8 +261,8 @@ class _AgendaPageState extends State<AgendaPage> {
                   const Divider(color: appBorder, height: 1),
                   const SizedBox(height: 18),
                   ..._buildMealSections(),
-                  const SizedBox(height: 18),
-                  _buildAddMealButton(),
+                  // const SizedBox(height: 18),
+                  // _buildAddMealButton(),
                 ],
               ),
             ),
@@ -585,21 +584,21 @@ class _AgendaPageState extends State<AgendaPage> {
     );
   }
 
-  Widget _buildAddMealButton() {
-    return OutlinedButton.icon(
-      onPressed: _addMeal,
-      icon: const Icon(Icons.add, size: 20),
-      label: const Text('Adicionar refeição'),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: appDarkGreen,
-        side: const BorderSide(color: appGreen),
-        minimumSize: const Size(double.infinity, 46),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
-      ),
-    );
-  }
+  // Widget _buildAddMealButton() {
+  //   return OutlinedButton.icon(
+  //     onPressed: _addMeal,
+  //     icon: const Icon(Icons.add, size: 20),
+  //     label: const Text('Adicionar refeição'),
+  //     style: OutlinedButton.styleFrom(
+  //       foregroundColor: appDarkGreen,
+  //       side: const BorderSide(color: appGreen),
+  //       minimumSize: const Size(double.infinity, 46),
+  //       shape: RoundedRectangleBorder(
+  //         borderRadius: BorderRadius.circular(14),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildEditButton() {
     return Padding(
