@@ -2,7 +2,7 @@
     package="com.example.nutri_app_project">
     <uses-permission android:name="android.permission.INTERNET"/>
    <application
-        android:label="nutri_app_project"
+        android:label="NutriViver"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
