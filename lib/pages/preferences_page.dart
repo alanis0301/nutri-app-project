@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../services/api.dart';
+
 class PreferencesPage extends StatefulWidget {
   const PreferencesPage({super.key});
 
@@ -16,41 +18,81 @@ class _PreferencesPageState extends State<PreferencesPage> {
   static const Color lightGreen = Color(0xFFF0FBF4);
   static const Color softGray = Color(0xFFF3F4F6);
 
-  final List<Map<String, dynamic>> goals = [
-    {'name': 'Perder peso', 'icon': Icons.trending_down},
-    {'name': 'Manter peso', 'icon': Icons.show_chart},
-    {'name': 'Ganhar massa', 'icon': Icons.workspace_premium_outlined},
-    {'name': 'Ter mais disposição', 'icon': Icons.bolt_outlined},
-  ];
-
-  final List<String> restrictions = [
-    'Glúten',
-    'Lactose',
-    'Oleaginosas',
-    'Frutos do mar',
-    'Soja',
-    'Outro',
-  ];
-
-  final List<String> likedFoods = [
-    'Frango',
-    'Ovo',
-    'Abacate',
-    'Brócolis',
-    'Tomate',
-    'Batata-doce',
-  ];
-
-  final Set<String> selectedGoals = {'Perder peso', 'Ter mais disposição'};
-  final Set<String> selectedRestrictions = {'Glúten', 'Lactose'};
-  final Set<String> selectedLikes = {
-    'Frango',
-    'Ovo',
-    'Abacate',
-    'Brócolis',
-    'Tomate',
-    'Batata-doce',
+  // Ícone por objetivo; objetivos novos no banco usam o ícone padrão.
+  static const Map<String, IconData> goalIcons = {
+    'Perder peso': Icons.trending_down,
+    'Manter peso': Icons.show_chart,
+    'Ganhar massa': Icons.workspace_premium_outlined,
+    'Ter mais disposição': Icons.bolt_outlined,
   };
+
+  // Opções vêm do backend (catálogos de goal, restriction e preference).
+  List<Map<String, dynamic>> goals = [];
+  List<String> restrictions = [];
+  List<String> likedFoods = [];
+
+  final Set<String> selectedGoals = {};
+  final Set<String> selectedRestrictions = {};
+  final Set<String> selectedLikes = {};
+
+  bool _loading = true;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  /// Carrega as opções e preenche a tela com o que está salvo no backend.
+  Future<void> _loadProfile() async {
+    try {
+      final results = await Future.wait([Api.profileOptions(), Api.me()]);
+      final options = results[0] as Map<String, List<String>>;
+      final user = results[1] as Map<String, dynamic>;
+      final names = (List list) => list.map((e) => e['name'] as String).toSet();
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        goals = options['goals']!
+            .map((g) => {'name': g, 'icon': goalIcons[g] ?? Icons.flag_outlined})
+            .toList();
+        restrictions = options['restrictions']!;
+        likedFoods = options['preferences']!;
+        selectedGoals
+          ..clear()
+          ..addAll(user['goal'] == null ? {} : {user['goal']['name'] as String});
+        selectedRestrictions
+          ..clear()
+          ..addAll(names(user['restrictions']));
+        final likes = names(user['preferences']);
+        for (final like in likes) {
+          if (!likedFoods.contains(like)) likedFoods.add(like);
+        }
+        selectedLikes
+          ..clear()
+          ..addAll(likes);
+      });
+    } catch (e) {
+      _showError(e);
+    }
+  }
+
+  void _showError(Object e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Não foi possível falar com o servidor: $e')),
+    );
+  }
+
+  /// O usuário tem um único objetivo (modelo do banco), então a seleção é exclusiva.
+  void _selectGoal(String value) {
+    setState(() {
+      selectedGoals
+        ..clear()
+        ..add(value);
+    });
+  }
 
   void _toggle(Set<String> set, String value) {
     setState(() {
@@ -121,7 +163,20 @@ class _PreferencesPageState extends State<PreferencesPage> {
     }
   }
 
-  void _save() {
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    try {
+      await Api.updateProfile(
+        goal: selectedGoals.isEmpty ? null : selectedGoals.first,
+        preferences: selectedLikes.toList(),
+        restrictions: selectedRestrictions.toList(),
+      );
+    } catch (e) {
+      setState(() => _saving = false);
+      _showError(e);
+      return;
+    }
+    if (!mounted) return;
     // Retorna as preferências para a tela anterior.
     Navigator.pop(context, <String, dynamic>{
       'goals': selectedGoals.toList(),
@@ -181,7 +236,9 @@ class _PreferencesPageState extends State<PreferencesPage> {
         child: Column(
           children: [
             Expanded(
-              child: SingleChildScrollView(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator(color: green))
+                  : SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,7 +299,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
                 height: 56,
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _save,
+                  onPressed: _saving || _loading ? null : _save,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: green,
                     foregroundColor: Colors.white,
@@ -272,7 +329,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
     final selected = selectedGoals.contains(name);
 
     return GestureDetector(
-      onTap: () => _toggle(selectedGoals, name),
+      onTap: () => _selectGoal(name),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
         height: 60,

@@ -1,8 +1,26 @@
 
 import 'package:flutter/material.dart';
 
+import '../services/api.dart';
+
+/// Agenda uma receita no cardápio (RF09) ou edita/reagenda uma já agendada (RF10).
+/// Retorna true ao salvar.
 class AddToPlanPage extends StatefulWidget {
-  const AddToPlanPage({super.key});
+  /// Receita pré-selecionada (ex.: vindo do detalhe da receita).
+  final Map<String, dynamic>? recipe;
+  final DateTime? initialDate;
+  final String? initialMealType;
+
+  /// Item do cardápio a editar; quando presente, a tela salva alterações em vez de criar.
+  final Map<String, dynamic>? planItem;
+
+  const AddToPlanPage({
+    super.key,
+    this.recipe,
+    this.initialDate,
+    this.initialMealType,
+    this.planItem,
+  });
 
   @override
   State<AddToPlanPage> createState() => _AddToPlanPageState();
@@ -18,57 +36,49 @@ class _AddToPlanPageState extends State<AddToPlanPage> {
   final TextEditingController observationController =
   TextEditingController();
 
-  final List<Map<String, String>> recipes = [
-    {
-      'title': 'Salmão ao forno com batata-doce',
-      'time': '30 min',
-      'difficulty': 'Fácil',
-      'calories': '420 kcal',
-      'image':
-      'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=300&q=80',
-    },
-    {
-      'title': 'Overnight Oats com Frutas',
-      'time': '10 min',
-      'difficulty': 'Fácil',
-      'calories': '280 kcal',
-      'image':
-      'https://images.unsplash.com/photo-1517673132405-a56a62b18caf?auto=format&fit=crop&w=300&q=80',
-    },
-    {
-      'title': 'Salada Caesar com Frango',
-      'time': '20 min',
-      'difficulty': 'Fácil',
-      'calories': '350 kcal',
-      'image':
-      'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=300&q=80',
-    },
-    {
-      'title': 'Wrap de frango',
-      'time': '20 min',
-      'difficulty': 'Fácil',
-      'calories': '320 kcal',
-      'image':
-      'https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=300&q=80',
-    },
-  ];
+  List<Map<String, dynamic>>? recipes;
 
-  late Map<String, String> selectedRecipe;
-  String selectedMeal = 'Almoço';
-  DateTime selectedDate = DateUtils.dateOnly(DateTime.now());
-  TimeOfDay selectedTime = const TimeOfDay(hour: 12, minute: 0);
+  Map<String, dynamic>? selectedRecipe;
+  late String selectedMeal;
+  late DateTime selectedDate;
+  late TimeOfDay selectedTime;
+  bool timeChosen = false;
+  bool saving = false;
 
+  bool get editing => widget.planItem != null;
+
+  // name = valor do backend; label = texto curto do botão.
   final List<Map<String, dynamic>> mealTypes = [
-    {'name': 'Café', 'icon': Icons.free_breakfast_outlined},
-    {'name': 'Almoço', 'icon': Icons.wb_sunny_outlined},
-    {'name': 'Jantar', 'icon': Icons.nightlight_outlined},
-    {'name': 'Lanche', 'icon': Icons.cookie_outlined},
+    {'name': 'Café da manhã', 'label': 'Café', 'icon': Icons.free_breakfast_outlined, 'time': const TimeOfDay(hour: 7, minute: 30)},
+    {'name': 'Almoço', 'label': 'Almoço', 'icon': Icons.wb_sunny_outlined, 'time': const TimeOfDay(hour: 12, minute: 0)},
+    {'name': 'Jantar', 'label': 'Jantar', 'icon': Icons.nightlight_outlined, 'time': const TimeOfDay(hour: 19, minute: 30)},
+    {'name': 'Lanche', 'label': 'Lanche', 'icon': Icons.cookie_outlined, 'time': const TimeOfDay(hour: 16, minute: 0)},
   ];
+
+  TimeOfDay _defaultTime(String meal) =>
+      mealTypes.firstWhere((m) => m['name'] == meal, orElse: () => mealTypes[1])['time'] as TimeOfDay;
 
   @override
   void initState() {
     super.initState();
-    selectedRecipe = recipes.first;
+    final item = widget.planItem;
+    if (item != null) {
+      selectedRecipe = item['recipe'] as Map<String, dynamic>;
+      selectedMeal = item['mealType'] as String;
+      selectedDate = Api.parseDay(item['day'] as String);
+      final parts = (item['time'] as String).split(':');
+      selectedTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+      timeChosen = true;
+      observationController.text = (item['note'] as String?) ?? '';
+    } else {
+      selectedRecipe = widget.recipe;
+      selectedMeal = widget.initialMealType ??
+          (mealTypes.any((m) => m['name'] == widget.recipe?['mealType'])
+              ? widget.recipe!['mealType'] as String
+              : 'Almoço');
+      selectedDate = DateUtils.dateOnly(widget.initialDate ?? DateTime.now());
+      selectedTime = _defaultTime(selectedMeal);
+    }
   }
 
   @override
@@ -132,12 +142,20 @@ class _AddToPlanPageState extends State<AddToPlanPage> {
     if (result != null && mounted) {
       setState(() {
         selectedTime = result;
+        timeChosen = true;
       });
     }
   }
 
   Future<void> _chooseRecipe() async {
-    final result = await showModalBottomSheet<Map<String, String>>(
+    try {
+      recipes ??= await Api.recipes();
+    } catch (e) {
+      _showError(e);
+      return;
+    }
+    if (!mounted) return;
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       backgroundColor: Colors.white,
       isScrollControlled: true,
@@ -163,13 +181,16 @@ class _AddToPlanPageState extends State<AddToPlanPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                ...recipes.map((recipe) {
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: recipes!.map((recipe) {
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: ClipRRect(
                       borderRadius: BorderRadius.circular(10),
                       child: Image.network(
-                        recipe['image']!,
+                        recipe['imageUrl'] ?? '',
                         width: 52,
                         height: 52,
                         fit: BoxFit.cover,
@@ -185,18 +206,20 @@ class _AddToPlanPageState extends State<AddToPlanPage> {
                       ),
                     ),
                     title: Text(
-                      recipe['title']!,
+                      recipe['name'],
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     subtitle: Text(
-                      '${recipe['time']} · ${recipe['calories']}',
+                      '${(recipe['prepTime'] as num).round()} min · ${recipe['calories'] ?? '-'} kcal · ${recipe['mealType']}',
                     ),
                     onTap: () => Navigator.pop(context, recipe),
                   );
-                }),
+                    }).toList(),
+                  ),
+                ),
               ],
             ),
           ),
@@ -211,19 +234,45 @@ class _AddToPlanPageState extends State<AddToPlanPage> {
     }
   }
 
-  void _addToPlan() {
-    final meal = <String, dynamic>{
-      'recipe': selectedRecipe['title'],
-      'image': selectedRecipe['image'],
-      'mealType': selectedMeal,
-      'date': selectedDate,
-      'time': _formatTime(selectedTime),
-      'observation': observationController.text.trim(),
-    };
+  void _showError(Object e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Não foi possível salvar: $e')),
+    );
+  }
 
-    // Retorna a refeição para a tela anterior.
-    // A AgendaPage poderá receber esse resultado e atualizar sua lista.
-    Navigator.pop(context, meal);
+  Future<void> _addToPlan() async {
+    final recipe = selectedRecipe;
+    if (recipe == null) {
+      _chooseRecipe();
+      return;
+    }
+    setState(() => saving = true);
+    final note = observationController.text.trim();
+    try {
+      if (editing) {
+        await Api.updatePlanItem(
+          widget.planItem!['id'] as String,
+          recipeId: recipe['id'] as String,
+          date: selectedDate,
+          time: _formatTime(selectedTime),
+          mealType: selectedMeal,
+          note: note,
+        );
+      } else {
+        await Api.addToPlan(
+          recipeId: recipe['id'] as String,
+          date: selectedDate,
+          time: _formatTime(selectedTime),
+          mealType: selectedMeal,
+          note: note.isEmpty ? null : note,
+        );
+      }
+    } catch (e) {
+      setState(() => saving = false);
+      _showError(e);
+      return;
+    }
+    if (mounted) Navigator.pop(context, true);
   }
 
   @override
@@ -239,8 +288,8 @@ class _AddToPlanPageState extends State<AddToPlanPage> {
         elevation: 0,
         automaticallyImplyLeading: false,
         centerTitle: true,
-        title: const Text(
-          'Adicionar ao plano',
+        title: Text(
+          editing ? 'Editar refeição' : 'Adicionar ao plano',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -287,7 +336,7 @@ class _AddToPlanPageState extends State<AddToPlanPage> {
                       style: TextButton.styleFrom(
                         foregroundColor: darkGreen,
                       ),
-                      child: const Text('Trocar receita'),
+                      child: Text(selectedRecipe == null ? 'Escolher receita' : 'Trocar receita'),
                     ),
                   ),
 
@@ -308,12 +357,10 @@ class _AddToPlanPageState extends State<AddToPlanPage> {
                     ),
                     itemBuilder: (context, index) {
                       final item = mealTypes[index];
-                      final name = item['name'] as String;
-                      final icon = item['icon'] as IconData;
-
                       return _buildMealType(
-                        name: name,
-                        icon: icon,
+                        name: item['name'] as String,
+                        label: item['label'] as String,
+                        icon: item['icon'] as IconData,
                       );
                     },
                   ),
@@ -484,7 +531,7 @@ class _AddToPlanPageState extends State<AddToPlanPage> {
                 height: 56,
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _addToPlan,
+                  onPressed: saving ? null : _addToPlan,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: green,
                     foregroundColor: Colors.white,
@@ -494,9 +541,13 @@ class _AddToPlanPageState extends State<AddToPlanPage> {
                       borderRadius: BorderRadius.circular(15),
                     ),
                   ),
-                  child: const Text(
-                    'Adicionar ao plano',
-                    style: TextStyle(
+                  child: Text(
+                    selectedRecipe == null
+                        ? 'Escolher receita'
+                        : editing
+                            ? 'Salvar alterações'
+                            : 'Adicionar ao plano',
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
@@ -511,6 +562,28 @@ class _AddToPlanPageState extends State<AddToPlanPage> {
   }
 
   Widget _buildRecipeCard() {
+    final recipe = selectedRecipe;
+    if (recipe == null) {
+      return InkWell(
+        onTap: _chooseRecipe,
+        borderRadius: BorderRadius.circular(17),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 28),
+          decoration: BoxDecoration(
+            border: Border.all(color: borderColor),
+            borderRadius: BorderRadius.circular(17),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.add_circle, color: green),
+              SizedBox(width: 10),
+              Text('Escolher receita', style: TextStyle(color: grayText)),
+            ],
+          ),
+        ),
+      );
+    }
     return Container(
       padding: const EdgeInsets.all(11),
       decoration: BoxDecoration(
@@ -523,7 +596,7 @@ class _AddToPlanPageState extends State<AddToPlanPage> {
           ClipRRect(
             borderRadius: BorderRadius.circular(11),
             child: Image.network(
-              selectedRecipe['image']!,
+              recipe['imageUrl'] ?? '',
               width: 72,
               height: 72,
               fit: BoxFit.cover,
@@ -544,7 +617,7 @@ class _AddToPlanPageState extends State<AddToPlanPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  selectedRecipe['title']!,
+                  recipe['name'],
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -564,7 +637,7 @@ class _AddToPlanPageState extends State<AddToPlanPage> {
                       color: grayText,
                     ),
                     Text(
-                      selectedRecipe['time']!,
+                      '${(recipe['prepTime'] as num).round()} min',
                       style: const TextStyle(
                         fontSize: 11,
                         color: grayText,
@@ -575,7 +648,7 @@ class _AddToPlanPageState extends State<AddToPlanPage> {
                       style: TextStyle(color: grayText),
                     ),
                     Text(
-                      selectedRecipe['difficulty']!,
+                      recipe['difficulty'] ?? '-',
                       style: const TextStyle(
                         fontSize: 11,
                         color: grayText,
@@ -586,7 +659,7 @@ class _AddToPlanPageState extends State<AddToPlanPage> {
                       style: TextStyle(color: grayText),
                     ),
                     Text(
-                      selectedRecipe['calories']!,
+                      '${recipe['calories'] ?? '-'} kcal',
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -605,6 +678,7 @@ class _AddToPlanPageState extends State<AddToPlanPage> {
 
   Widget _buildMealType({
     required String name,
+    required String label,
     required IconData icon,
   }) {
     final selected = selectedMeal == name;
@@ -613,6 +687,7 @@ class _AddToPlanPageState extends State<AddToPlanPage> {
       onTap: () {
         setState(() {
           selectedMeal = name;
+          if (!timeChosen) selectedTime = _defaultTime(name);
         });
       },
       child: AnimatedContainer(
@@ -644,7 +719,7 @@ class _AddToPlanPageState extends State<AddToPlanPage> {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                name,
+                label,
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,

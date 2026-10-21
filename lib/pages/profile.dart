@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 
+import '../services/api.dart';
 import '../widgets/profile/profile_header.dart';
+import 'login_page.dart';
 import 'preferences_page.dart';
 import 'tracking_page.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  late Future<Map<String, dynamic>> user = Api.me();
 
   static const Color green = Color(0xFF16C768);
   static const Color darkGreen = Color(0xFF07863D);
@@ -32,18 +41,24 @@ class ProfilePage extends StatelessWidget {
             const ProfileHeader(),
             const SizedBox(height: 24),
 
-            _buildUserHeader(),
+            FutureBuilder<Map<String, dynamic>>(
+              future: user,
+              builder: (context, snapshot) => snapshot.hasData
+                  ? _buildUserHeader(snapshot.data!)
+                  : const SizedBox(height: 80),
+            ),
             const SizedBox(height: 24),
 
             _buildHighlightCard(
               icon: Icons.tune,
               title: 'Editar preferências',
               subtitle: 'Gostos, restrições e objetivos',
-                onTap: () {
-                  Navigator.push(
+                onTap: () async {
+                  final saved = await Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const PreferencesPage()),
                   );
+                  if (saved != null) setState(() => user = Api.me());
                 },
             ),
             const SizedBox(height: 12),
@@ -78,7 +93,11 @@ class ProfilePage extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  _buildAccountItem(Icons.person_outline, 'Dados pessoais'),
+                  _buildAccountItem(
+                    Icons.person_outline,
+                    'Dados pessoais',
+                    onTap: _showPersonalData,
+                  ),
                   _divider(),
                   _buildAccountItem(
                     Icons.notifications_none,
@@ -97,7 +116,7 @@ class ProfilePage extends StatelessWidget {
 
             const SizedBox(height: 24),
             InkWell(
-              onTap: () {},
+              onTap: _logout,
               borderRadius: BorderRadius.circular(13),
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -127,7 +146,50 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildUserHeader() {
+  Future<void> _logout() async {
+    try {
+      await Api.logout();
+    } catch (_) {
+      // Mesmo sem rede, o token local já foi descartado.
+    }
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (_) => false,
+    );
+  }
+
+  Future<void> _showPersonalData() async {
+    final data = await user;
+    if (!mounted) return;
+    String names(String key) {
+      final list = (data[key] as List).map((e) => e['name']).join(', ');
+      return list.isEmpty ? 'Nenhuma' : list;
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Dados pessoais'),
+        content: Text(
+          'Usuário: ${data['name']}\n'
+          'Objetivo: ${data['goal']?['name'] ?? 'Não definido'}\n'
+          'Restrições: ${names('restrictions')}\n'
+          'Alimentos preferidos: ${names('preferences')}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Fechar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserHeader(Map<String, dynamic> data) {
+    final name = data['name'] as String;
+    final goal = data['goal']?['name'] as String?;
     return Row(
       children: [
         Container(
@@ -138,9 +200,9 @@ class ProfilePage extends StatelessWidget {
             shape: BoxShape.circle,
           ),
           alignment: Alignment.center,
-          child: const Text(
-            'A',
-            style: TextStyle(
+          child: Text(
+            name.isEmpty ? '?' : name[0].toUpperCase(),
+            style: const TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
               color: darkGreen,
@@ -153,17 +215,17 @@ class ProfilePage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Ana',
-                style: TextStyle(
+                name,
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: darkText,
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
-                'ana.silva@email.com',
-                style: TextStyle(fontSize: 13, color: grayText),
+                goal == null ? 'Objetivo não definido' : 'Objetivo: $goal',
+                style: const TextStyle(fontSize: 13, color: grayText),
               ),
             ],
           ),
@@ -227,9 +289,9 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildAccountItem(IconData icon, String label) {
+  Widget _buildAccountItem(IconData icon, String label, {VoidCallback? onTap}) {
     return InkWell(
-      onTap: () {},
+      onTap: onTap ?? () => _comingSoon(label),
       borderRadius: BorderRadius.circular(17),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
@@ -251,6 +313,12 @@ class ProfilePage extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _comingSoon(String label) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$label: fora do escopo da PoC.')),
     );
   }
 

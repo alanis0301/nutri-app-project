@@ -1,16 +1,24 @@
 import 'package:flutter/material.dart';
 import 'circle_button.dart';
+import '../../../services/api.dart';
 
 class RecipeImage extends StatefulWidget {
-  const RecipeImage({super.key});
+  final Map<String, dynamic> recipe;
+
+  const RecipeImage({super.key, required this.recipe});
 
   @override
   State<RecipeImage> createState() => _RecipeImageState();
 }
 
 class _RecipeImageState extends State<RecipeImage> {
-  // 1. Declaração da variável de estado aqui
-  bool isFavorite = false;
+  late bool isFavorite = widget.recipe['favorite'] == true;
+
+  Future<void> _toggleFavorite() async {
+    final favorite = await Api.toggleFavorite(widget.recipe['id']);
+    widget.recipe['favorite'] = favorite;
+    if (mounted) setState(() => isFavorite = favorite);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,8 +31,8 @@ class _RecipeImageState extends State<RecipeImage> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset(
-            'assets/images/salmao_batata_brocolis.jpg',
+          Image.network(
+            widget.recipe['imageUrl'] ?? '',
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
               return Container(
@@ -58,11 +66,7 @@ class _RecipeImageState extends State<RecipeImage> {
             child: CircleButton(
               icon: isFavorite ? Icons.favorite : Icons.favorite_border,
               iconColor: isFavorite ? Colors.red : textColor,
-              onTap: () {
-                setState(() {
-                  isFavorite = !isFavorite;
-                });
-              },
+              onTap: _toggleFavorite,
             ),
           ),
         ],

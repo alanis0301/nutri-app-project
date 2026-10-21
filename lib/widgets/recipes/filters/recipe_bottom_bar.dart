@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 class RecipesBottomBar extends StatelessWidget {
   final VoidCallback onApplyFilters;
   final Color verde;
+  final int? count;
 
   const RecipesBottomBar({
     super.key,
     required this.onApplyFilters,
     required this.verde,
+    required this.count,
   });
 
   @override
@@ -25,8 +27,12 @@ class RecipesBottomBar extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Ver 32 receitas',
+            Text(
+              count == null
+                  ? 'Contando receitas...'
+                  : count == 1
+                      ? '1 receita encontrada'
+                      : '$count receitas encontradas',
               style: TextStyle(
                 color: Color(0xFF737B8C),
                 fontSize: 14,
