@@ -9,6 +9,7 @@ import '../widgets/recipes/recipe_card.dart';
 import '../widgets/recipes/category_widget.dart';
 import 'filter_recipes_page.dart';
 import 'recipe_details.dart';
+import 'all_recipes_page.dart';
 
 class RecipesPage extends StatefulWidget {
   const RecipesPage({super.key});
@@ -33,6 +34,7 @@ class _RecipesPageState extends State<RecipesPage> {
   final searchController = TextEditingController();
   RecipeFilters filters = RecipeFilters.empty;
   String title = 'Receitas rápidas para você';
+  String? selectedCategory;
   late Future<List<Map<String, dynamic>>> _recipes = Api.recipes();
 
   @override
@@ -41,8 +43,10 @@ class _RecipesPageState extends State<RecipesPage> {
     super.dispose();
   }
 
-  void _show(String newTitle, Future<List<Map<String, dynamic>>> recipes) {
+  void _show(String newTitle, Future<List<Map<String, dynamic>>> recipes,
+      {String? category}) {
     setState(() {
+      selectedCategory = category;
       title = newTitle;
       _recipes = recipes;
     });
@@ -51,7 +55,16 @@ class _RecipesPageState extends State<RecipesPage> {
   void _showAll() {
     searchController.clear();
     filters = RecipeFilters.empty;
-    _show('Todas as receitas', Api.recipes());
+    _show('Receitas rápidas para você', Api.recipes());
+  }
+
+  /// "Ver todas": abre a lista vertical com todas as receitas.
+  Future<void> _openAllRecipes() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AllRecipesPage()),
+    );
+    setState(() {}); // favoritos podem ter mudado
   }
 
   void _search(String text) {
@@ -65,12 +78,17 @@ class _RecipesPageState extends State<RecipesPage> {
 
   void _openCategory(String label, String? mealType) {
     searchController.clear();
+    // Tocar de novo na categoria selecionada desmarca.
+    if (selectedCategory == label) {
+      _showAll();
+      return;
+    }
     if (mealType == null) {
       filters = RecipeFilters.empty;
-      _show(label, Api.searchRecipes(label.toLowerCase()));
+      _show(label, Api.searchRecipes(label.toLowerCase()), category: label);
     } else {
       filters = RecipeFilters(tempos: const {}, refeicoes: {mealType}, ingredientes: const {});
-      _show(label, _query(filters));
+      _show(label, _query(filters), category: label);
     }
   }
 
@@ -140,7 +158,7 @@ class _RecipesPageState extends State<RecipesPage> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: _showAll,
+                    onTap: _openAllRecipes,
                     child: const Text(
                       'Ver todas',
                       style: TextStyle(
@@ -222,6 +240,7 @@ class _RecipesPageState extends State<RecipesPage> {
                     child: CategoryWidget(
                       label: c[0] as String,
                       iconWidget: c[2] as Widget,
+                      selected: selectedCategory == c[0],
                     ),
                   );
                 }).toList(),
