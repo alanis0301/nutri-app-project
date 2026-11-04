@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../services/api.dart';
+
 class TrackingPage extends StatefulWidget {
   const TrackingPage({super.key});
 
@@ -18,13 +20,149 @@ class _TrackingPageState extends State<TrackingPage> {
   final List<String> periods = ['Semana', 'Mês', 'Ano'];
   int selectedPeriod = 0;
 
-  // Dados de exemplo (substitua pelos dados reais)
-  final List<String> days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
-  final List<int> planned = [4, 5, 4, 5, 4, 4, 2];
-  final List<int> done = [3, 5, 3, 5, 2, 3, 1];
+  Map<String, dynamic>? stats;
+  String? error;
+
+  // Barras do gráfico: rótulo + planejadas/feitas, agrupadas por dia, semana ou mês.
+  List<String> labels = [];
+  List<int> planned = [];
+  List<int> done = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  /// Período atual: semana (seg–dom), mês ou ano corrente.
+  List<DateTime> _range() {
+    final today = DateUtils.dateOnly(DateTime.now());
+    switch (selectedPeriod) {
+      case 0:
+        final monday = today.subtract(Duration(days: today.weekday - 1));
+        return [monday, monday.add(const Duration(days: 6))];
+      case 1:
+        return [
+          DateTime(today.year, today.month, 1),
+          DateTime(today.year, today.month + 1, 0),
+        ];
+      default:
+        return [DateTime(today.year, 1, 1), DateTime(today.year, 12, 31)];
+    }
+  }
+
+  Future<void> _load() async {
+    final period = selectedPeriod;
+    setState(() {
+      stats = null;
+      error = null;
+    });
+    final range = _range();
+    try {
+      final result = await Api.stats(range[0], range[1]);
+      if (!mounted || period != selectedPeriod) return;
+      _bucket(result, range[0], range[1]);
+      setState(() => stats = result);
+    } catch (e) {
+      if (mounted) setState(() => error = '$e');
+    }
+  }
+
+  void _bucket(Map<String, dynamic> result, DateTime start, DateTime end) {
+    const weekdays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+    const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    final int count;
+    int Function(DateTime) index;
+    if (selectedPeriod == 0) {
+      labels = weekdays;
+      count = 7;
+      index = (d) => d.weekday - 1;
+    } else if (selectedPeriod == 1) {
+      // Semanas do mês (dias 1–7, 8–14, ...).
+      count = ((end.day - 1) ~/ 7) + 1;
+      labels = List.generate(count, (i) => 'S${i + 1}');
+      index = (d) => (d.day - 1) ~/ 7;
+    } else {
+      labels = months;
+      count = 12;
+      index = (d) => d.month - 1;
+    }
+    planned = List.filled(count, 0);
+    done = List.filled(count, 0);
+    for (final day in result['days'] as List) {
+      final i = index(Api.parseDay(day['day'] as String));
+      planned[i] += day['planned'] as int;
+      done[i] += day['done'] as int;
+    }
+  }
+
+  void _showReport() {
+    final days = (stats?['days'] as List?) ?? [];
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      builder: (context) => SafeArea(
+        child: days.isEmpty
+            ? const Padding(
+                padding: EdgeInsets.all(24),
+                child: Text('Nenhuma refeição planejada neste período.'),
+              )
+            : ListView(
+                padding: const EdgeInsets.all(20),
+                children: [
+                  const _SectionTitle('Relatório por dia'),
+                  const SizedBox(height: 8),
+                  ...days.map((d) {
+                    final date = Api.parseDay(d['day'] as String);
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                          '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}'),
+                      trailing: Text(
+                        '${d['done']} de ${d['planned']} refeições',
+                        style: TextStyle(
+                          color: d['done'] == d['planned'] ? green : grayText,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (error != null || stats == null) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
+            child: Column(
+              children: [
+                _buildHeader(),
+                const SizedBox(height: 20),
+                _buildPeriodSelector(),
+                Expanded(
+                  child: Center(
+                    child: error != null
+                        ? TextButton(
+                            onPressed: _load,
+                            child: Text('Erro: $error\nTentar de novo',
+                                textAlign: TextAlign.center),
+                          )
+                        : const CircularProgressIndicator(color: green),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -53,7 +191,7 @@ class _TrackingPageState extends State<TrackingPage> {
                 height: 56,
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: _showReport,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: green,
                     foregroundColor: Colors.white,
@@ -130,7 +268,11 @@ class _TrackingPageState extends State<TrackingPage> {
 
           return Expanded(
             child: GestureDetector(
-              onTap: () => setState(() => selectedPeriod = index),
+              onTap: () {
+                if (selectedPeriod == index) return;
+                setState(() => selectedPeriod = index);
+                _load();
+              },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 160),
                 height: 38,
@@ -156,7 +298,8 @@ class _TrackingPageState extends State<TrackingPage> {
   }
 
   Widget _buildConsistencyCard() {
-    const value = 0.78;
+    final total = stats!['planned'] as int;
+    final value = total == 0 ? 0.0 : (stats!['done'] as int) / total;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -177,7 +320,7 @@ class _TrackingPageState extends State<TrackingPage> {
                   width: 68,
                   height: 68,
                   child: CircularProgressIndicator(
-                    value: value,
+                    value: value.toDouble(),
                     strokeWidth: 7,
                     backgroundColor: const Color(0xFFDDF3E6),
                     valueColor: const AlwaysStoppedAnimation<Color>(green),
@@ -198,8 +341,8 @@ class _TrackingPageState extends State<TrackingPage> {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
+              children: [
+                const Text(
                   'Consistência alimentar',
                   style: TextStyle(
                     fontSize: 16,
@@ -207,10 +350,12 @@ class _TrackingPageState extends State<TrackingPage> {
                     color: darkText,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
-                  'Última semana',
-                  style: TextStyle(fontSize: 13, color: grayText),
+                  total == 0
+                      ? 'Nenhuma refeição planejada ${['nesta semana', 'neste mês', 'neste ano'][selectedPeriod]}'
+                      : '${stats!['done']} de $total refeições feitas ${['nesta semana', 'neste mês', 'neste ano'][selectedPeriod]}',
+                  style: const TextStyle(fontSize: 13, color: grayText),
                 ),
               ],
             ),
@@ -249,7 +394,8 @@ class _TrackingPageState extends State<TrackingPage> {
   }
 
   Widget _buildChartCard() {
-    const double maxValue = 5;
+    final double maxValue =
+        planned.fold<int>(1, (max, v) => v > max ? v : max).toDouble();
     const double chartHeight = 110;
 
     return Container(
@@ -261,7 +407,7 @@ class _TrackingPageState extends State<TrackingPage> {
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
-        children: List.generate(days.length, (index) {
+        children: List.generate(labels.length, (index) {
           final plannedH = planned[index] / maxValue * chartHeight;
           final doneH = done[index] / maxValue * chartHeight;
 
@@ -297,7 +443,7 @@ class _TrackingPageState extends State<TrackingPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  days[index],
+                  labels[index],
                   style: const TextStyle(fontSize: 11, color: grayText),
                 ),
               ],
@@ -309,14 +455,12 @@ class _TrackingPageState extends State<TrackingPage> {
   }
 
   Widget _buildStatsGrid() {
-    final plannedTotal = planned.reduce((a, b) => a + b);
-    final doneTotal = done.reduce((a, b) => a + b);
-
+    final s = this.stats!;
     final stats = <Map<String, dynamic>>[
-      {'label': 'Refeições planejadas', 'value': '$plannedTotal', 'green': false},
-      {'label': 'Refeições realizadas', 'value': '$doneTotal', 'green': true},
-      {'label': 'Receitas experimentadas', 'value': '8', 'green': false},
-      {'label': 'Dias seguindo o plano', 'value': '5 / 7', 'green': false},
+      {'label': 'Refeições planejadas', 'value': '${s['planned']}', 'green': false},
+      {'label': 'Refeições realizadas', 'value': '${s['done']}', 'green': true},
+      {'label': 'Receitas experimentadas', 'value': '${s['recipesTried']}', 'green': false},
+      {'label': 'Dias seguindo o plano', 'value': '${s['daysOnPlan']} / ${s['daysWithPlan']}', 'green': false},
     ];
 
     return GridView.builder(
@@ -366,6 +510,13 @@ class _TrackingPageState extends State<TrackingPage> {
   }
 
   Widget _buildHabitsCard() {
+    final s = stats!;
+    final daysWithPlan = s['daysWithPlan'] as int;
+    final donePerDay = daysWithPlan == 0 ? 0.0 : (s['done'] as int) / daysWithPlan;
+    final plannedPerDay = daysWithPlan == 0 ? 0.0 : (s['planned'] as int) / daysWithPlan;
+    final fruitVeg = (s['fruitVegPerDay'] as num).toDouble();
+    final variety = (s['variety'] as num).toDouble();
+    String fmt(double v) => v.toStringAsFixed(1).replaceAll('.', ',');
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -374,23 +525,30 @@ class _TrackingPageState extends State<TrackingPage> {
         border: Border.all(color: borderColor),
       ),
       child: Column(
-        children: const [
+        children: [
           _HabitRow(
             label: 'Frequência de refeições',
-            value: '4/5 refeições/dia',
-            progress: 0.8,
+            value: '${fmt(donePerDay)}/${fmt(plannedPerDay)} refeições/dia',
+            progress: plannedPerDay == 0 ? 0 : (donePerDay / plannedPerDay).clamp(0, 1).toDouble(),
           ),
-          SizedBox(height: 14),
+          const SizedBox(height: 14),
+          // Meta de 5 porções de frutas/verduras por dia.
           _HabitRow(
             label: 'Frutas e verduras',
-            value: '3/5 porções/dia',
-            progress: 0.6,
+            value: '${fmt(fruitVeg)}/5 porções/dia',
+            progress: (fruitVeg / 5).clamp(0, 1).toDouble(),
           ),
-          SizedBox(height: 14),
+          const SizedBox(height: 14),
           _HabitRow(
             label: 'Variedade alimentar',
-            value: 'Boa',
-            progress: 0.88,
+            value: s['done'] == 0
+                ? '—'
+                : variety >= 0.7
+                    ? 'Boa'
+                    : variety >= 0.4
+                        ? 'Média'
+                        : 'Baixa',
+            progress: variety,
           ),
         ],
       ),

@@ -1,8 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:nutri_app_project/pages/filter_recipes_page.dart';
+import 'package:nutri_app_project/models/recipe_filters.dart';
 
+/// Chips de filtro da tela de receitas. Qualquer chip abre a tela de filtros;
+/// o chip fica verde quando há filtro daquele tipo aplicado.
 class FilterRecipes extends StatelessWidget {
-  const FilterRecipes({super.key});
+  final RecipeFilters filters;
+  final VoidCallback onOpenFilters;
+
+  const FilterRecipes({
+    super.key,
+    required this.filters,
+    required this.onOpenFilters,
+  });
+
+  static const Color green = Color(0xFF16C768);
 
   @override
   Widget build(BuildContext context) {
@@ -10,81 +21,44 @@ class FilterRecipes extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _buildActiveFilterChip(
-            context: context,
-            icon: Icons.tune,
-            label: 'Filtros',
-            greenColor: Color(0xFF16C768),
-          ),
+          _chip(icon: Icons.tune, label: 'Filtros', active: !filters.isEmpty),
           const SizedBox(width: 8),
-          _buildFilterChip(label: 'Tempo'),
+          _chip(label: 'Tempo', active: filters.tempos.isNotEmpty),
           const SizedBox(width: 8),
-          _buildFilterChip(label: 'Tipo de refeição'),
+          _chip(label: 'Tipo de refeição', active: filters.refeicoes.isNotEmpty),
           const SizedBox(width: 8),
-          _buildFilterChip(label: 'Ingredientes'),
+          _chip(label: 'Ingredientes', active: filters.ingredientes.isNotEmpty),
         ],
       ),
     );
   }
 
-  Widget _buildActiveFilterChip({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required Color greenColor,
-  }) {
+  Widget _chip({IconData? icon, required String label, required bool active}) {
     return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const RecipeFiltersPage(),
-          ),
-        );
-      },
+      onTap: onOpenFilters,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 8,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFFE8F8EE),
+          color: active ? const Color(0xFFE8F8EE) : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: greenColor),
+          border: Border.all(color: active ? green : const Color(0xFFE1E5EB)),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 16, color: greenColor),
-            const SizedBox(width: 6),
+            if (icon != null) ...[
+              Icon(icon, size: 16, color: active ? green : const Color(0xFF697386)),
+              const SizedBox(width: 6),
+            ],
             Text(
               label,
               style: TextStyle(
                 fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: greenColor,
+                fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                color: active ? green : const Color(0xFF697386),
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFilterChip({required String label}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE1E5EB)),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 13,
-          color: Color(0xFF697386),
-          fontWeight: FontWeight.w500,
         ),
       ),
     );

@@ -2,7 +2,14 @@ import 'package:flutter/material.dart';
 import '../../pages/preferences_page.dart';
 
 class DashboardHeader extends StatelessWidget {
-  const DashboardHeader({super.key});
+  final String name;
+  final VoidCallback onPreferencesSaved;
+
+  const DashboardHeader({
+    super.key,
+    required this.name,
+    required this.onPreferencesSaved,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -15,12 +22,15 @@ class DashboardHeader extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Olá, Ana!',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1C1E),
+              Expanded(
+                child: Text(
+                  'Olá, $name!',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A1C1E),
+                  ),
                 ),
               ),
               Container(
@@ -36,11 +46,12 @@ class DashboardHeader extends StatelessWidget {
                     color: Color(0xFF1A1C1E),
                     size: 20,
                   ),
-                  onPressed: () {
-                    Navigator.push(
+                  onPressed: () async {
+                    final saved = await Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const PreferencesPage()),
                     );
+                    if (saved != null) onPreferencesSaved();
                   },
                 ),
               ),

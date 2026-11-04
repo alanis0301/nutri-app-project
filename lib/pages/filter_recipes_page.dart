@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nutri_app_project/models/recipe_filters.dart';
+import 'package:nutri_app_project/services/api.dart';
 import 'package:nutri_app_project/widgets/recipes/filters/recipe_bottom_bar.dart';
 import 'package:nutri_app_project/widgets/recipes/filters/ingredient_search.dart';
 import 'package:nutri_app_project/widgets/recipes/filters/ingredient.dart';
@@ -7,7 +8,9 @@ import 'package:nutri_app_project/widgets/recipes/filters/filter_options.dart';
 import 'package:nutri_app_project/widgets/recipes/filters/filter_section_title.dart';
 
 class RecipeFiltersPage extends StatefulWidget {
-  const RecipeFiltersPage({super.key});
+  final RecipeFilters initial;
+
+  const RecipeFiltersPage({super.key, this.initial = RecipeFilters.empty});
 
   @override
   State<RecipeFiltersPage> createState() => _RecipeFiltersPageState();
@@ -16,50 +19,20 @@ class RecipeFiltersPage extends StatefulWidget {
 class _RecipeFiltersPageState extends State<RecipeFiltersPage> {
   static const Color verde = Color(0xFF20C663);
   static const Color texto = Color(0xFF172033);
-  static const Color borda = Color(0xFFE1E5EAB);
+  static const Color borda = Color(0xFFE1E5EB);
 
   final TextEditingController _ingredientController = TextEditingController();
 
-  final List<String> _preparationTimes = [
-    'Até 15 min',
-    '15 a 30 min',
-    '30 a 45 min',
-    'Mais de 45 min',
-  ];
+  final List<String> _preparationTimes = RecipeFilters.timeRanges.keys.toList();
+  final List<String> _mealTypes = Api.mealTypes;
+  List<String> _availableIngredients = [];
 
-  final List<String> _mealTypes = [
-    'Café da manhã',
-    'Almoço',
-    'Jantar',
-    'Lanche',
-    'Sobremesa',
-  ];
+  late final Set<String> _selectedTimes = {...widget.initial.tempos};
+  late final Set<String> _selectedMeals = {...widget.initial.refeicoes};
+  late final Set<String> _selectedIngredients = {...widget.initial.ingredientes};
 
-  final List<String> _availableIngredients = [
-    'Frango',
-    'Ovo',
-    'Tomate',
-    'Brócolis',
-    'Arroz',
-    'Batata',
-    'Cenoura',
-    'Queijo',
-    'Feijão',
-  ];
-
-  final Set<String> _selectedTimes = {'15 a 30 min'};
-
-  final Set<String> _selectedMeals = {
-    'Almoço',
-    'Jantar',
-  };
-
-  final Set<String> _selectedIngredients = {
-    'Frango',
-    'Ovo',
-    'Tomate',
-    'Brócolis',
-  };
+  int? _count;
+  int _countRequest = 0;
 
   List<String> get _filteredIngredients {
     final query = _ingredientController.text.trim().toLowerCase();
@@ -69,10 +42,42 @@ class _RecipeFiltersPageState extends State<RecipeFiltersPage> {
     }).toList();
   }
 
+  RecipeFilters get _filters => RecipeFilters(
+        tempos: Set<String>.from(_selectedTimes),
+        refeicoes: Set<String>.from(_selectedMeals),
+        ingredientes: Set<String>.from(_selectedIngredients),
+      );
+
+  @override
+  void initState() {
+    super.initState();
+    Api.ingredientNames().then((names) {
+      if (mounted) setState(() => _availableIngredients = names);
+    });
+    _updateCount();
+  }
+
   @override
   void dispose() {
     _ingredientController.dispose();
     super.dispose();
+  }
+
+  /// Conta no backend quantas receitas os filtros atuais retornam.
+  Future<void> _updateCount() async {
+    final request = ++_countRequest;
+    setState(() => _count = null);
+    final f = _filters;
+    final recipes = await Api.recipes(
+      mealTypes: f.refeicoes.isEmpty ? null : f.refeicoes.toList(),
+      minPrepTime: f.minPrepTime,
+      maxPrepTime: f.maxPrepTime,
+      ingredients: f.ingredientes.isEmpty ? null : f.ingredientes.toList(),
+    );
+    // Ignora respostas de cliques anteriores que chegaram depois.
+    if (mounted && request == _countRequest) {
+      setState(() => _count = recipes.length);
+    }
   }
 
   void _toggleSelection(
@@ -86,6 +91,7 @@ class _RecipeFiltersPageState extends State<RecipeFiltersPage> {
         selection.add(value);
       }
     });
+    _updateCount();
   }
 
   void _clearFilters() {
@@ -95,16 +101,11 @@ class _RecipeFiltersPageState extends State<RecipeFiltersPage> {
       _selectedIngredients.clear();
       _ingredientController.clear();
     });
+    _updateCount();
   }
 
   void _applyFilters() {
-    final filters = RecipeFilters(
-      tempos: Set<String>.from(_selectedTimes),
-      refeicoes: Set<String>.from(_selectedMeals),
-      ingredientes: Set<String>.from(_selectedIngredients),
-    );
-
-    Navigator.pop(context, filters);
+    Navigator.pop(context, _filters);
   }
 
   @override
@@ -191,22 +192,26 @@ class _RecipeFiltersPageState extends State<RecipeFiltersPage> {
               },
             ),
             const SizedBox(height: 16),
-            Ingredient(
-              ingredients: _filteredIngredients,
-              selectedIngredients: _selectedIngredients,
-              onIngredientTap: (ingredient) {
-                _toggleSelection(
-                  _selectedIngredients,
-                  ingredient,
-                );
-              },
-            ),
+            if (_availableIngredients.isEmpty)
+              const Center(child: CircularProgressIndicator(color: verde))
+            else
+              Ingredient(
+                ingredients: _filteredIngredients,
+                selectedIngredients: _selectedIngredients,
+                onIngredientTap: (ingredient) {
+                  _toggleSelection(
+                    _selectedIngredients,
+                    ingredient,
+                  );
+                },
+              ),
           ],
         ),
       ),
       bottomNavigationBar: RecipesBottomBar(
         onApplyFilters: _applyFilters,
         verde: verde,
+        count: _count,
       ),
     );
   }

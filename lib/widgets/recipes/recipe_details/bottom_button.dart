@@ -1,31 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../pages/add_to_plan_page.dart';
 
-class BottomButton extends StatefulWidget {
-  const BottomButton({super.key});
+/// "Adicionar ao plano" já com a receita aberta selecionada.
+class BottomButton extends StatelessWidget {
+  final Map<String, dynamic> recipe;
 
-  @override
-  State<BottomButton> createState() => _BottomButtonState();
-}
-
-class _BottomButtonState extends State<BottomButton> {
-  // 1. Declaração da variável de estado aqui
-  bool isFavorite = false;
-  late List<bool> checkedIngredients;
-
-  final List<String> ingredients = [
-    '2 filés de salmão (200g cada)',
-    '1 batata-doce média',
-    '1 xícara de brócolis',
-    '2 colheres de azeite de oliva',
-    'Sal e pimenta a gosto',
-  ];
+  const BottomButton({super.key, required this.recipe});
 
   @override
   Widget build(BuildContext context) {
-
-    const Color textColor = Color(0xFF171E2E);
-    const Color dividerColor = Color(0xFFE0E4E9);
     const Color primaryGreen = Color(0xFF19C45A);
 
     return Container(
@@ -35,13 +18,19 @@ class _BottomButtonState extends State<BottomButton> {
       child: SizedBox(
         height: 56,
         child: ElevatedButton(
-          onPressed: () {
-            Navigator.push(
+          onPressed: () async {
+            final messenger = ScaffoldMessenger.of(context);
+            final added = await Navigator.push<bool>(
               context,
               MaterialPageRoute(
-                builder: (context) => const AddToPlanPage(),
+                builder: (context) => AddToPlanPage(recipe: recipe),
               ),
             );
+            if (added == true) {
+              messenger.showSnackBar(
+                const SnackBar(content: Text('Receita adicionada ao plano.')),
+              );
+            }
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: primaryGreen,
@@ -63,5 +52,4 @@ class _BottomButtonState extends State<BottomButton> {
       ),
     );
   }
-
 }

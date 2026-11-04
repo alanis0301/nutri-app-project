@@ -6,6 +6,8 @@ class RecipeCard extends StatelessWidget {
   final String difficulty;
   final String imageUrl;
   final VoidCallback onTap;
+  final bool favorite;
+  final VoidCallback? onFavorite;
 
   const RecipeCard({
     super.key,
@@ -14,6 +16,8 @@ class RecipeCard extends StatelessWidget {
     required this.difficulty,
     required this.imageUrl,
     required this.onTap,
+    this.favorite = false,
+    this.onFavorite,
   });
 
   @override
@@ -44,22 +48,29 @@ class RecipeCard extends StatelessWidget {
                   height: 110,
                   width: double.infinity,
                   fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    height: 110,
+                    color: const Color(0xFFE8F8EE),
+                  ),
                 ),
               ),
               Positioned(
                 top: 8,
                 right: 8,
-                child: Container(
-                  width: 30,
-                  height: 30,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.favorite_border,
-                    size: 16,
-                    color: Colors.redAccent,
+                child: GestureDetector(
+                  onTap: onFavorite,
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      favorite ? Icons.favorite : Icons.favorite_border,
+                      size: 16,
+                      color: Colors.redAccent,
+                    ),
                   ),
                 ),
               ),

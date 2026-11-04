@@ -1,5 +1,7 @@
 
 import 'package:flutter/material.dart';
+import '../services/api.dart';
+import 'add_to_plan_page.dart';
 import 'calendar_page.dart';
 import 'recipe_details.dart';
 
@@ -9,6 +11,7 @@ const Color appText = Color(0xFF182033);
 const Color appGray = Color(0xFF687184);
 const Color appBorder = Color(0xFFE0E5EC);
 
+/// Cardápio semanal (RF08–RF10): refeições por dia vindas do backend.
 class AgendaPage extends StatefulWidget {
   const AgendaPage({super.key});
 
@@ -19,48 +22,53 @@ class AgendaPage extends StatefulWidget {
 class _AgendaPageState extends State<AgendaPage> {
   late DateTime selectedDate;
 
-  final Map<String, List<MealItem>> mealsByDate = {};
+  /// Refeições da semana exibida, carregadas do backend.
+  List<Map<String, dynamic>>? weekMeals;
+  String? error;
+  DateTime? loadedWeek;
 
   final List<String> weekdays = const [
     'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom',
   ];
 
+  static const categories = [
+    'Café da manhã',
+    'Almoço',
+    'Jantar',
+    'Lanche',
+  ];
+
+  static const defaultTimes = {
+    'Café da manhã': '07:30',
+    'Almoço': '12:00',
+    'Jantar': '19:30',
+    'Lanche': '16:00',
+  };
+
   @override
   void initState() {
     super.initState();
-
     selectedDate = DateUtils.dateOnly(DateTime.now());
-
-    // Refeições de demonstração para o dia inicial.
-    mealsByDate[_dateKey(selectedDate)] = [
-      MealItem(
-        category: 'Café da manhã',
-        title: 'Overnight Oats com Frutas',
-        time: '07:30',
-        imageUrl: '',
-      ),
-      MealItem(
-        category: 'Almoço',
-        title: 'Salmão ao forno com batata-doce',
-        time: '12:00',
-        imageUrl:
-        '',
-      ),
-      MealItem(
-        category: 'Jantar',
-        title: 'Salada Caesar com Frango',
-        time: '19:30',
-        imageUrl:
-        '',
-      ),
-    ];
+    _loadWeek();
   }
 
-  String _dateKey(DateTime date) =>
-      '${date.year}-${date.month}-${date.day}';
+  Future<void> _loadWeek() async {
+    final start = weekStart;
+    setState(() {
+      loadedWeek = start;
+      error = null;
+    });
+    try {
+      final meals = await Api.plan(start, start.add(const Duration(days: 6)));
+      if (mounted && loadedWeek == start) setState(() => weekMeals = meals);
+    } catch (e) {
+      if (mounted) setState(() => error = '$e');
+    }
+  }
 
-  List<MealItem> get selectedMeals =>
-      mealsByDate[_dateKey(selectedDate)] ?? [];
+  List<Map<String, dynamic>> get selectedMeals => (weekMeals ?? [])
+      .where((m) => m['day'] == Api.day(selectedDate))
+      .toList();
 
   DateTime get weekStart =>
       DateTime(selectedDate.year, selectedDate.month,
@@ -103,116 +111,50 @@ class _AgendaPageState extends State<AgendaPage> {
     );
 
     if (result != null && mounted) {
-      setState(() {
-        selectedDate = DateUtils.dateOnly(result);
-      });
+      _changeDay(result);
     }
   }
 
   void _changeDay(DateTime date) {
+    final previousWeek = weekStart;
     setState(() {
       selectedDate = DateUtils.dateOnly(date);
     });
+    if (weekStart != previousWeek) _loadWeek();
   }
 
-  Future<void> _addMeal() async {
-    final titleController = TextEditingController();
-    final timeController = TextEditingController(text: '12:00');
-
-    String category = 'Lanche';
-
-    final result = await showDialog<MealItem>(
-      context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Adicionar refeição'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: titleController,
-                      decoration: const InputDecoration(
-                        labelText: 'Nome da refeição',
-                        hintText: 'Ex.: Sanduíche natural',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      value: category,
-                      decoration: const InputDecoration(
-                        labelText: 'Categoria',
-                      ),
-                      items: const [
-                        'Café da manhã',
-                        'Almoço',
-                        'Jantar',
-                        'Lanche',
-                      ].map((value) {
-                        return DropdownMenuItem(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setDialogState(() => category = value);
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: timeController,
-                      decoration: const InputDecoration(
-                        labelText: 'Horário',
-                        hintText: '12:00',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Cancelar'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    final title = titleController.text.trim();
-                    final time = timeController.text.trim();
-
-                    if (title.isEmpty || time.isEmpty) return;
-
-                    Navigator.pop(
-                      dialogContext,
-                      MealItem(
-                        category: category,
-                        title: title,
-                        time: time,
-                        imageUrl: '',
-                      ),
-                    );
-                  },
-                  child: const Text('Adicionar'),
-                ),
-              ],
-            );
-          },
+  Future<void> _run(Future<void> Function() action) async {
+    try {
+      await action();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Não foi possível atualizar: $e')),
         );
-      },
-    );
-
-    titleController.dispose();
-    timeController.dispose();
-
-    if (result != null && mounted) {
-      setState(() {
-        mealsByDate.putIfAbsent(_dateKey(selectedDate), () => []);
-        mealsByDate[_dateKey(selectedDate)]!.add(result);
-      });
+      }
     }
+    await _loadWeek();
+  }
+
+  Future<void> _addMeal([String? mealType]) async {
+    final added = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddToPlanPage(
+          initialDate: selectedDate,
+          initialMealType: mealType,
+        ),
+      ),
+    );
+    if (added == true) _loadWeek();
+  }
+
+  Future<void> _editMeal(Map<String, dynamic> meal) async {
+    final saved = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => AddToPlanPage(planItem: meal)),
+    );
+    if (saved == true) _loadWeek();
   }
 
   Future<void> _editPlan() async {
@@ -225,14 +167,21 @@ class _AgendaPageState extends State<AgendaPage> {
         title: const Text('Editar plano'),
         content: Text(
           'Plano do dia $dateLabel.\n\n'
-              'Você pode adicionar refeições pelo botão '
-              '"Adicionar refeição" ou remover refeições tocando '
-              'no ícone de lixeira de cada cartão.',
+              'Toque em "Adicionar refeição" para incluir uma receita, '
+              'toque no cartão para trocar a receita, o dia ou o horário, '
+              'marque o círculo quando fizer a refeição e use o X para remover.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Fechar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              _addMeal();
+            },
+            child: const Text('Adicionar refeição'),
           ),
         ],
       ),
@@ -253,16 +202,33 @@ class _AgendaPageState extends State<AgendaPage> {
                   18,
                   20,
                   30,
-                ),                children: [
+                ),
+                children: [
                   _buildHeader(),
                   const SizedBox(height: 24),
                   _buildWeekSelector(),
                   const SizedBox(height: 18),
                   const Divider(color: appBorder, height: 1),
                   const SizedBox(height: 18),
-                  ..._buildMealSections(),
-                  // const SizedBox(height: 18),
-                  // _buildAddMealButton(),
+                  if (error != null)
+                    Column(
+                      children: [
+                        Text('Não foi possível carregar o plano: $error'),
+                        TextButton(
+                          onPressed: _loadWeek,
+                          child: const Text('Tentar de novo'),
+                        ),
+                      ],
+                    )
+                  else if (weekMeals == null)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 40),
+                      child: Center(
+                        child: CircularProgressIndicator(color: appGreen),
+                      ),
+                    )
+                  else
+                    ..._buildMealSections(),
                 ],
               ),
             ),
@@ -317,8 +283,8 @@ class _AgendaPageState extends State<AgendaPage> {
     );
   }
 
-
   Widget _buildWeekSelector() {
+    final daysWithMeals = (weekMeals ?? []).map((m) => m['day']).toSet();
     return Column(
       children: [
         Row(
@@ -353,6 +319,7 @@ class _AgendaPageState extends State<AgendaPage> {
           children: List.generate(7, (index) {
             final date = weekStart.add(Duration(days: index));
             final isSelected = DateUtils.isSameDay(date, selectedDate);
+            final hasMeals = daysWithMeals.contains(Api.day(date));
 
             return Expanded(
               child: GestureDetector(
@@ -381,6 +348,18 @@ class _AgendaPageState extends State<AgendaPage> {
                           color: isSelected ? Colors.white : appText,
                         ),
                       ),
+                      const SizedBox(height: 4),
+                      // Ponto indica dia com refeições planejadas.
+                      Container(
+                        width: 5,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: hasMeals
+                              ? (isSelected ? Colors.white : appGreen)
+                              : Colors.transparent,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -393,23 +372,9 @@ class _AgendaPageState extends State<AgendaPage> {
   }
 
   List<Widget> _buildMealSections() {
-    const categories = [
-      'Café da manhã',
-      'Almoço',
-      'Jantar',
-      'Lanche',
-    ];
-
-    const defaultTimes = {
-      'Café da manhã': '07:30',
-      'Almoço': '12:00',
-      'Jantar': '19:30',
-      'Lanche': '16:00',
-    };
-
     return categories.map((category) {
       final categoryMeals = selectedMeals
-          .where((meal) => meal.category == category)
+          .where((meal) => meal['mealType'] == category)
           .toList();
 
       return Padding(
@@ -431,7 +396,7 @@ class _AgendaPageState extends State<AgendaPage> {
                 ),
                 Text(
                   categoryMeals.isNotEmpty
-                      ? categoryMeals.first.time
+                      ? categoryMeals.first['time'] as String
                       : defaultTimes[category]!,
                   style: const TextStyle(
                     color: appGray,
@@ -451,113 +416,126 @@ class _AgendaPageState extends State<AgendaPage> {
     }).toList();
   }
 
-  Widget _buildMealCard(MealItem meal) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: appBorder),
-        borderRadius: BorderRadius.circular(17),
-      ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: meal.imageUrl.isEmpty
-                ? Container(
-              width: 64,
-              height: 64,
-              color: const Color(0xFFE8F8EE),
-              child: const Icon(
-                Icons.restaurant,
-                color: appDarkGreen,
-              ),
-            )
-                : Image.network(
-              meal.imageUrl,
-              width: 64,
-              height: 64,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
+  Widget _buildMealCard(Map<String, dynamic> meal) {
+    final recipe = meal['recipe'] as Map<String, dynamic>;
+    final done = meal['done'] == true;
+    return InkWell(
+      onTap: () => _editMeal(meal),
+      borderRadius: BorderRadius.circular(17),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: done ? const Color(0xFFF0FBF4) : Colors.white,
+          border: Border.all(color: done ? appGreen : appBorder),
+          borderRadius: BorderRadius.circular(17),
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                recipe['imageUrl'] ?? '',
                 width: 64,
                 height: 64,
-                color: const Color(0xFFE8F8EE),
-                child: const Icon(
-                  Icons.restaurant,
-                  color: appDarkGreen,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  width: 64,
+                  height: 64,
+                  color: const Color(0xFFE8F8EE),
+                  child: const Icon(
+                    Icons.restaurant,
+                    color: appDarkGreen,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  meal.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: appText,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    recipe['name'],
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: appText,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      decoration: done ? TextDecoration.lineThrough : null,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 5),
-                InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const RecipeDetailPage(),
-                      ),
-                    );
-                  },
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Ver receita',
-                        style: TextStyle(
-                          color: appDarkGreen,
-                          fontSize: 12,
+                  const SizedBox(height: 3),
+                  Text(
+                    '${meal['time']} · ${recipe['calories'] ?? '-'} kcal'
+                    '${(meal['note'] as String?)?.isNotEmpty == true ? ' · ${meal['note']}' : ''}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: appGray, fontSize: 12),
+                  ),
+                  const SizedBox(height: 3),
+                  InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => RecipeDetailPage(recipe: recipe),
                         ),
-                      ),
-                      SizedBox(width: 4),
-                      Icon(
-                        Icons.chevron_right,
-                        color: appDarkGreen,
-                        size: 18,
-                      ),
-                    ],
+                      );
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Text(
+                          'Ver receita',
+                          style: TextStyle(
+                            color: appDarkGreen,
+                            fontSize: 12,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Icon(
+                          Icons.chevron_right,
+                          color: appDarkGreen,
+                          size: 18,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          IconButton(
-            tooltip: 'Remover refeição',
-            onPressed: () {
-              setState(() {
-                mealsByDate[_dateKey(selectedDate)]?.remove(meal);
-              });
-            },
-            icon: const Icon(
-              Icons.close,
-              color: appGray,
-              size: 18,
+            IconButton(
+              tooltip: done ? 'Desmarcar como feita' : 'Marcar como feita',
+              onPressed: () => _run(
+                () => Api.updatePlanItem(meal['id'] as String, done: !done),
+              ),
+              icon: Icon(
+                done ? Icons.check_circle : Icons.radio_button_unchecked,
+                color: done ? appGreen : appGray,
+              ),
             ),
-          ),
-        ],
+            IconButton(
+              tooltip: 'Remover refeição',
+              onPressed: () => _run(
+                () => Api.removePlanItem(meal['id'] as String),
+              ),
+              icon: const Icon(
+                Icons.close,
+                color: appGray,
+                size: 18,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildEmptyMeal(String category) {
     return InkWell(
-      onTap: _addMeal,
+      onTap: () => _addMeal(category),
       borderRadius: BorderRadius.circular(15),
       child: Container(
         width: double.infinity,
@@ -571,7 +549,7 @@ class _AgendaPageState extends State<AgendaPage> {
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+          children: const [
             Icon(Icons.add_circle, color: appGreen, size: 22),
             SizedBox(width: 10),
             Text(
@@ -583,22 +561,6 @@ class _AgendaPageState extends State<AgendaPage> {
       ),
     );
   }
-
-  // Widget _buildAddMealButton() {
-  //   return OutlinedButton.icon(
-  //     onPressed: _addMeal,
-  //     icon: const Icon(Icons.add, size: 20),
-  //     label: const Text('Adicionar refeição'),
-  //     style: OutlinedButton.styleFrom(
-  //       foregroundColor: appDarkGreen,
-  //       side: const BorderSide(color: appGreen),
-  //       minimumSize: const Size(double.infinity, 46),
-  //       shape: RoundedRectangleBorder(
-  //         borderRadius: BorderRadius.circular(14),
-  //       ),
-  //     ),
-  //   );
-  // }
 
   Widget _buildEditButton() {
     return Padding(
@@ -626,18 +588,4 @@ class _AgendaPageState extends State<AgendaPage> {
       ),
     );
   }
-}
-
-class MealItem {
-  final String category;
-  final String title;
-  final String time;
-  final String imageUrl;
-
-  MealItem({
-    required this.category,
-    required this.title,
-    required this.time,
-    required this.imageUrl,
-  });
 }
